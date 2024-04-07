@@ -238,8 +238,6 @@ void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
     CloseHandle(hDrive);
 }
 
-
-
 void File::FAT32_Read_Data(Drive* dr, std::wstring drivePath)
 {
     FAT32_BOOTSECTOR bs = dr->getBootSectorIn4();
