@@ -384,18 +384,17 @@ void NTFS_Create_Date_Time(BYTE* attr, Header_Attribute h, Date& d, Time& t)
 
 std::string NTFS_Create_Name(BYTE* attr, Header_Attribute h)
 {
-    std::ostringstream oss;
+    std::string str;
     BYTE* data_attr = new BYTE[h.attribute_data_size];
     std::copy(attr + h.attribute_data_offset, attr + h.attribute_data_offset + h.attribute_data_size, data_attr);
     int length_name = data_attr[64];
     for (int i = 0; i < length_name * 2 - 1; i++)
     {
         if (data_attr[66 + i] != 0x00)
-            oss << std::hex << data_attr[66 + i];
+            str.push_back(static_cast<char>(data_attr[66 + i]));
     }
-    std::string str = oss.str();
     delete[] data_attr;
-    return oss.str();
+    return str;
 }
 
 Directory* Drive::NTFS_Find_Parent_Directory(int parent_id)

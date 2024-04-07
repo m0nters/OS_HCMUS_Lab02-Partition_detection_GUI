@@ -17,7 +17,7 @@ void Computer::readDrives()
             FAT32_Read_RDET(i, drivePath);
         }
         readData(drivePath);
-        root_Drives[i]->setToTalSize();
+        root_Drives[i]->getTotalSize();
     }
 }
 

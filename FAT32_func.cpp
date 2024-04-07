@@ -39,7 +39,7 @@ void Computer::FAT32_Read_BootSector(int ith_drive, std::wstring drivePath)
 
 std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std::vector <BYTE> main_entry)
 {
-    std::ostringstream oss;
+    std::string str;
     if (!extra_entry.empty())
     {
         for (int i = extra_entry.size() - 1; i >= 0; i--)
@@ -47,20 +47,20 @@ std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std:
             for (int j = 0x01; j < 0x01 + 10; j++)
             {
                 if (extra_entry[i][j] == 0xFF)
-                    return oss.str();
-                oss << std::hex << extra_entry[i][j];
+                    return str;
+                str.push_back(static_cast<char>(extra_entry[i][j]));
             }
             for (int j = 0x0E; j < 0x0E + 12; j++)
             {
                 if (extra_entry[i][j] == 0xFF)
-                    return oss.str();
-                oss << std::hex << extra_entry[i][j];
+                    return str;
+                str.push_back(static_cast<char>(extra_entry[i][j]));
             }
             for (int j = 0x1C; j < 0x1C + 4; j++)
             {
                 if (extra_entry[i][j] == 0xFF)
-                    return oss.str();
-                oss << std::hex << extra_entry[i][j];
+                    return str;
+                str.push_back(static_cast<char>(extra_entry[i][j]));
             }
         }
     }
@@ -69,12 +69,13 @@ std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std:
         for (int i = 0x00; i <= 0x00 + 11; i++)
         {
             if (main_entry[i] == 0xFF)
-                return oss.str();
-            oss << std::hex << main_entry[i];
+                return str;
+            str.push_back(static_cast<char>(main_entry[i]));
         }
     }
-    return oss.str();
+    return str;
 }
+
 Date FAT32_Create_Date(std::vector <BYTE> main_entry)
 {
     std::vector <BYTE> bigedian_date(2);

@@ -6,9 +6,9 @@ Qt_GUI::Qt_GUI(QWidget* parent)
 	ui.setupUi(this);
 	ui.treeWidget->setColumnCount(2);
 	ui.treeWidget->setHeaderLabels({ "Name", "Date created\n(dd/mm/yyyy)", "Time created\n(hh:mm:ss:ms)", "Total Size" });
-	ui.treeWidget->expandAll();
+	ui.treeWidget->setSortingEnabled(true);
 	connect(ui.treeWidget, &QTreeWidget::itemClicked, this, &Qt_GUI::onTreeItemClicked);
-
+	ui.treeWidget->expandAll();
 }
 
 Qt_GUI::~Qt_GUI()

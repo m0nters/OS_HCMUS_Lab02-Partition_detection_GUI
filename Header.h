@@ -91,7 +91,7 @@ protected:
 	Date date_created;
 	Time time_created;
 	std::vector <int> cluster_pos;
-	long long total_size = 0;
+	long long total_size = 0; // in byte
 	std::vector <std::vector<BYTE>>data;
 
 	NTFS_MFT mft;
@@ -272,7 +272,7 @@ public:
 					QString::fromStdString(dir_entity->getName()),
 					QString::fromStdString(dir_entity->getDate_str()),
 					QString::fromStdString(dir_entity->getTime_str()), 
-					""
+					QString::fromStdString(dir_entity->getTotalSize_str())
 				); // folder ko co size
 				folder->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
@@ -313,6 +313,32 @@ public:
 			}
 		}
 		return total_size;
+	}
+
+	std::string getTotalSize_str() {
+		// round 2 decimal numbers
+		long long byte_size = getTotalSize();
+		if (byte_size < 1024) {
+			return std::to_string(byte_size) + " B";
+		}
+		else if (byte_size < 1024 * 1024) {
+			double num = (double)byte_size / 1024;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " KB";
+		}
+		else if (byte_size < 1024 * 1024 * 1024) {
+			double num = (double)byte_size / (1024 * 1024);
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " MB";
+		}
+		else {
+			double num = (double)byte_size / (1024 * 1024 * 1024);
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " GB";
+		}
 	}
 
 	void addNewFile_Directory(FileSystemEntity* f)
@@ -376,7 +402,7 @@ private:
 	int started_byte_rdet;
 	std::vector<FileSystemEntity*> rootDirectories_Files;
 	FAT32_BOOTSECTOR fat32bs;
-	long long total_size;
+	long long total_size = 0; // in byte
 
 	NTFS_VBR vbr;
 public:
@@ -458,7 +484,7 @@ public:
 					QString::fromStdString(dir_entity->getName()), 
 					QString::fromStdString(dir_entity->getDate_str()), 
 					QString::fromStdString(dir_entity->getTime_str()), 
-					""
+					QString::fromStdString(dir_entity->getTotalSize_str())
 				);  // folder ko co size
 				Drive->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
@@ -486,7 +512,7 @@ public:
 		}
 	}
 
-	void setToTalSize()
+	long long getTotalSize()
 	{
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
 		{
@@ -499,7 +525,36 @@ public:
 				total_size += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
 			}
 		}
+
+		return total_size;
 	}
+
+	std::string getTotalSize_str() {
+		// round 2 decimal numbers
+		long long byte_size = getTotalSize();
+		if (byte_size < 1024) {
+			return std::to_string(byte_size) + " B";
+		}
+		else if (byte_size < 1024 * 1024) {
+			double num = (double)byte_size / 1024;
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " KB";
+		}
+		else if (byte_size < 1024 * 1024 * 1024) {
+			double num = (double)byte_size / (1024 * 1024);
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " MB";
+		}
+		else {
+			double num = (double)byte_size / (1024 * 1024 * 1024);
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(2) << num;
+			return ss.str() + " GB";
+		}
+	}
+
 
 	void readData(std::wstring drivePath)
 	{
@@ -608,9 +663,9 @@ public:
 			w.QTreeWidgetItem_populate_info(
 				drive_item, 
 				QString::fromStdString(root_Drives[i]->getName()), 
-				"", 
 				"",
-				""
+				"",
+				QString::fromStdString(root_Drives[i]->getTotalSize_str())
 			);
 			w.get_current_treeWidget()->addTopLevelItem(drive_item);
 			drive_item->setIcon(0, QIcon(".\\drive_icon.png"));
