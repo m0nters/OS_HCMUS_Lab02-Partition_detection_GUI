@@ -70,12 +70,21 @@ std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std:
         {
             if (main_entry[i] == 0xFF)
                 return str;
+            if (main_entry[i] == 0x20)
+            {
+                if (i < 0x08)
+                {
+                    i = 0x08;
+                    if (main_entry[i] != 0x20)
+                        str.push_back('.');
+                    else return str;
+                }
+            }
             str.push_back(static_cast<char>(main_entry[i]));
         }
     }
     return str;
 }
-
 Date FAT32_Create_Date(std::vector <BYTE> main_entry)
 {
     std::vector <BYTE> bigedian_date(2);
@@ -238,6 +247,8 @@ void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
     CloseHandle(hDrive);
 }
 
+
+
 void File::FAT32_Read_Data(Drive* dr, std::wstring drivePath)
 {
     FAT32_BOOTSECTOR bs = dr->getBootSectorIn4();
@@ -306,7 +317,7 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                 copy(&data[start_byte], &data[start_byte + 32], back_inserter(temp_vec)); // Doc 32 byte vao entry phu
                 extra_entry.push_back(temp_vec);
             }
-            else if ((attribute == 0x10 || attribute == 0x20) && data[start_byte] != 0xE5)
+            else if ((attribute == 0x10 || attribute == 0x20 || (attribute == 0x00 && data[start_byte] != 0x00)) && data[start_byte] != 0xE5)
             {
                 copy(&data[start_byte], &data[start_byte + 32], back_inserter(main_entry)); // Doc 32 byte vao entry chinh
                 std::string name = FAT32_Create_Name(extra_entry, main_entry);
@@ -315,7 +326,7 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                 Time t = FAT32_Create_Time(main_entry);
                 int started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
                 long long total_size = main_entry[0x1C] | (main_entry[0x1C + 1] << 8) | (main_entry[0x1C + 2] << 16) | (main_entry[0x1C + 3] << 24);
-                if (attribute == 0x20)
+                if (attribute == 0x20 || attribute == 0x00)
                 {
                     File* newFile = new File;
                     newFile->setName(name);
@@ -472,3 +483,4 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
     }
     return false;
 }
+

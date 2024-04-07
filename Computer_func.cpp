@@ -80,8 +80,9 @@ void Computer::GetRemovableDriveNames() {
     }
 }
 
-void Computer::FAT32_Remove_File(int ith_drive, std::wstring drivePath, std::string name_file)
+void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
 {
+    std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();
     HANDLE hDrive = CreateFileW(drivePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
     if (hDrive == INVALID_HANDLE_VALUE) {
@@ -186,8 +187,9 @@ void Computer::FAT32_Remove_File(int ith_drive, std::wstring drivePath, std::str
     CloseHandle(hDrive);
     this->root_Drives[ith_drive]->FAT32_Remove_File(drivePath, name_file, *this);
 }
-void Computer::FAT32_Recover_File(int ith_drive, std::wstring drivePath, std::string name_file)
+void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
 {
+    std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();
     auto it = this->offset_recover_started_rdet_entry.find(name_file);
     if (it != this->offset_recover_started_rdet_entry.end())
 

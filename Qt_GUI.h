@@ -4,7 +4,7 @@
 
 #include "ui_Qt_GUI.h"
 #include <QtWidgets/QMainWindow>
-#include <QFileSystemModel> 
+#include <QFileSystemModel>
 
 class Qt_GUI : public QMainWindow
 {
@@ -20,10 +20,12 @@ public:
     }
 
     void QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size);
-
+    QTreeWidgetItem* selectedItem = nullptr;
 public slots:
     void onTreeItemClicked(QTreeWidgetItem* item, int column); // left click to .txt file to show its content
     void resizeColumnsToContents(); // auto resize columns width when expand/collapse folders
+    void on_delete_button_clicked(); // delete selected file/folder
+    void on_recover_button_clicked(); // recover selected file/folder
 private:
     Ui::Qt_GUIClass ui;
 };

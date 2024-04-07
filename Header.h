@@ -110,7 +110,7 @@ public:
 
 	void setTime(Time t) { this->time_created = t; }
 	void setDate(Date d) { this->date_created = d; }
-	
+
 	std::string getTime_str() {
 		std::ostringstream oss;
 		oss << std::setw(2) << std::setfill('0') << time_created.hour << ":"
@@ -271,11 +271,15 @@ public:
 					dir_item,
 					QString::fromStdString(dir_entity->getName()),
 					QString::fromStdString(dir_entity->getDate_str()),
-					QString::fromStdString(dir_entity->getTime_str()), 
+					QString::fromStdString(dir_entity->getTime_str()),
 					QString::fromStdString(dir_entity->getTotalSize_str())
 				); // folder ko co size
 				folder->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
+				// ========================================================================================
+				dir_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
+				// ========================================================================================
 				dir_entity->makeGUI(w, dir_item);
 			}
 			else
@@ -288,12 +292,16 @@ public:
 						file_item,
 						QString::fromStdString(file_entity->getName()),
 						QString::fromStdString(file_entity->getDate_str()),
-						QString::fromStdString(file_entity->getTime_str()), 
+						QString::fromStdString(file_entity->getTime_str()),
 						QString::fromStdString(file_entity->getTotalSize_str())
 					);
 					folder->addChild(file_item);
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
+					// ========================================================================================
+					file_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+					file_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(file_entity->getName()))); // save name_file
+					// ========================================================================================
 					file_item->setIcon(0, QIcon(".\\txt_icon.png"));
 				}
 			}
@@ -301,17 +309,19 @@ public:
 	}
 
 	long long getTotalSize() {
+		long long totalsize = 0; // because folder_entity can be called many times, so we need to reset totalsize as 0 for each new folder call
 		for (int i = 0; i < contents.size(); i++)
 		{
 			if (dynamic_cast<Directory*>(contents[i]))
 			{
-				total_size += dynamic_cast<Directory*>(contents[i])->getTotalSize();
+				totalsize += dynamic_cast<Directory*>(contents[i])->getTotalSize();
 			}
 			else
 			{
-				total_size += dynamic_cast<File*>(contents[i])->getTotalSize();
+				totalsize += dynamic_cast<File*>(contents[i])->getTotalSize();
 			}
 		}
+		total_size = totalsize;
 		return total_size;
 	}
 
@@ -402,9 +412,10 @@ private:
 	int started_byte_rdet;
 	std::vector<FileSystemEntity*> rootDirectories_Files;
 	FAT32_BOOTSECTOR fat32bs;
-	long long total_size = 0; // in byte
-
 	NTFS_VBR vbr;
+	long long total_size = 0; // in byte
+	std::wstring drivePath;
+
 public:
 	void set_fat32_bootsector(int byte_per_sector, int sector_per_cluster, int sector_before_FAT_table, int num_of_FAT_tables, int Volume_size, int sector_per_FAT, int first_cluster_of_RDET)
 	{
@@ -480,14 +491,18 @@ public:
 			{
 				QTreeWidgetItem* dir_item = new QTreeWidgetItem();
 				w.QTreeWidgetItem_populate_info(
-					dir_item, 
-					QString::fromStdString(dir_entity->getName()), 
-					QString::fromStdString(dir_entity->getDate_str()), 
-					QString::fromStdString(dir_entity->getTime_str()), 
+					dir_item,
+					QString::fromStdString(dir_entity->getName()),
+					QString::fromStdString(dir_entity->getDate_str()),
+					QString::fromStdString(dir_entity->getTime_str()),
 					QString::fromStdString(dir_entity->getTotalSize_str())
 				);  // folder ko co size
 				Drive->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
+				// ========================================================================================
+				dir_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
+				// ========================================================================================
 				dir_entity->makeGUI(w, dir_item);
 			}
 			else // is file
@@ -500,12 +515,16 @@ public:
 						file_item,
 						QString::fromStdString(file_entity->getName()),
 						QString::fromStdString(file_entity->getDate_str()),
-						QString::fromStdString(file_entity->getTime_str()), 
+						QString::fromStdString(file_entity->getTime_str()),
 						QString::fromStdString(file_entity->getTotalSize_str())
 					);
 					Drive->addChild(file_item);
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
+					// ========================================================================================
+					file_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+					file_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(file_entity->getName()))); // save name_file
+					// ========================================================================================
 					file_item->setIcon(0, QIcon(".\\txt_icon.png"));
 				}
 			}
@@ -525,7 +544,6 @@ public:
 				total_size += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
 			}
 		}
-
 		return total_size;
 	}
 
@@ -589,6 +607,8 @@ public:
 	Directory* NTFS_Find_Parent_Directory(int parent_id);
 
 	void FAT32_Remove_File(std::wstring drivePath, std::string name_file, Computer& MyPC);
+	void setDrivePath(std::wstring drivePath) { this->drivePath = drivePath; };
+	std::wstring getDrivePath() { return drivePath; }
 	~Drive()
 	{
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
@@ -661,8 +681,8 @@ public:
 		{
 			QTreeWidgetItem* drive_item = new QTreeWidgetItem;
 			w.QTreeWidgetItem_populate_info(
-				drive_item, 
-				QString::fromStdString(root_Drives[i]->getName()), 
+				drive_item,
+				QString::fromStdString(root_Drives[i]->getName()),
 				"",
 				"",
 				QString::fromStdString(root_Drives[i]->getTotalSize_str())
@@ -673,8 +693,10 @@ public:
 		}
 	}
 
-	void FAT32_Remove_File(int ith_drive, std::wstring drivePath, std::string name_file);
-	void FAT32_Recover_File(int ith_drive, std::wstring drivePath, std::string name_file);
+	
+
+	void FAT32_Remove_File(int ith_drive, std::string name_file);
+	void FAT32_Recover_File(int ith_drive, std::string name_file);
 };
 
 
