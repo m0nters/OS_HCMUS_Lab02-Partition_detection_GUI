@@ -23,7 +23,7 @@
       <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="left_layout">
         <item>
-         <widget class="QLabel" name="label_4">
+         <widget class="QLabel" name="tree_label">
           <property name="text">
            <string>Cây thư mục</string>
           </property>
@@ -43,139 +43,156 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="layoutWidget">
-       <layout class="QVBoxLayout" name="verticalLayout_7">
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
-          <item>
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Nội dung file .txt (Preview, read-only)</string>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-            <property name="buddy">
-             <cstring>plainTextEdit</cstring>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="plainTextEdit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="sizeIncrement">
-             <size>
-              <width>0</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_6">
-          <item>
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Danh sách những file đã xóa trong phiên hiện tại (read-only)</string>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="delete_list">
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <layout class="QVBoxLayout" name="verticalLayout_3">
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_2">
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="text">
-                 <string>Tên (hoặc số thứ tự) drive cần restore </string>
-                </property>
-                <property name="buddy">
-                 <cstring>drive_input</cstring>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="drive_input"/>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout">
-              <item>
-               <widget class="QLabel" name="label_2">
-                <property name="text">
-                 <string>Tên file cần restore</string>
-                </property>
-                <property name="buddy">
-                 <cstring>file_name_input</cstring>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="file_name_input"/>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout">
-            <item>
-             <widget class="QPushButton" name="delete_button">
-              <property name="text">
-               <string>Delete</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="restore_button">
-              <property name="text">
-               <string>Restore</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QLabel" name="notice">
-          <property name="text">
-           <string>Lưu ý: chỉ có thể restore file đã xóa trong cùng 1 phiên, tức xóa file xong tắt chương trình rồi mở lại thì không restore được nữa!</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignCenter</set>
-          </property>
-          <property name="wordWrap">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
+      <widget class="QSplitter" name="right_layout">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <widget class="QWidget" name="layoutWidget">
+        <layout class="QVBoxLayout" name="upper">
+         <item>
+          <widget class="QLabel" name="file_content_label">
+           <property name="text">
+            <string>Nội dung file .txt (Preview, read-only)</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+           <property name="buddy">
+            <cstring>file_content_box</cstring>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="file_content_box">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QWidget" name="layoutWidget">
+        <layout class="QVBoxLayout" name="lower">
+         <item>
+          <layout class="QVBoxLayout" name="deleted_list">
+           <item>
+            <widget class="QLabel" name="deleted_list_label">
+             <property name="text">
+              <string>Danh sách những file đã xóa trong phiên hiện tại (read-only)</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+             <property name="buddy">
+              <cstring>deleted_list_box</cstring>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPlainTextEdit" name="deleted_list_box">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="in_out_methods">
+           <item>
+            <layout class="QVBoxLayout" name="input">
+             <item>
+              <layout class="QVBoxLayout" name="drive">
+               <item>
+                <widget class="QLabel" name="drive_input_label">
+                 <property name="text">
+                  <string>Tên (hoặc số thứ tự) drive cần restore </string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>drive_input</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="drive_input"/>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QVBoxLayout" name="name">
+               <item>
+                <widget class="QLabel" name="name_input_label">
+                 <property name="text">
+                  <string>Tên file cần restore (Chú ý có phân biệt hoa thường!)</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>name_input</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="name_input"/>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="output">
+             <item>
+              <widget class="QPushButton" name="delete_button">
+               <property name="text">
+                <string>Delete</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="restore_button">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Restore</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QLabel" name="notice_sign">
+           <property name="text">
+            <string>Lưu ý: chỉ có thể restore file đã xóa trong cùng 1 phiên, tức những file hiện trong danh sách trên. Nếu ta xóa file xong tắt chương trình rồi mở lại thì không restore được nữa!</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignmentFlag::AlignCenter</set>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -186,7 +203,7 @@
  <tabstops>
   <tabstop>treeWidget</tabstop>
   <tabstop>drive_input</tabstop>
-  <tabstop>file_name_input</tabstop>
+  <tabstop>name_input</tabstop>
   <tabstop>delete_button</tabstop>
   <tabstop>restore_button</tabstop>
  </tabstops>

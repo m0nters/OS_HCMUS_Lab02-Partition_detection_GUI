@@ -79,18 +79,19 @@ void Computer::GetRemovableDriveNames() {
     {
         Drive* d = new Drive;
         d->setName(driveNames[i].substr(0, driveNames[i].size() - 1));
-        drive_to_order_map[d->getName()] = i;
         addRootDrive(d);
     }
 }
 
-void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
+bool Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
 {
     std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();
     HANDLE hDrive = CreateFileW(drivePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
     if (hDrive == INVALID_HANDLE_VALUE) {
         std::cerr << "Failed to open drive: " << GetLastError() << std::endl;
+        CloseHandle(hDrive);
+        return false;
     }
     DWORD bytesRead;
     int bytes_read = 0;
@@ -103,7 +104,7 @@ void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
         if (!ReadFile(hDrive, rdet, sizeof(rdet), &bytesRead, NULL)) {
             std::wcerr << "Failed to read boot sector from physical drive." << std::endl;
             CloseHandle(hDrive);
-            return;
+            return false;
         }
 
         int count_extra_entry = 0; // Dem entry phu
@@ -157,12 +158,12 @@ void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
                         DWORD lastError = GetLastError();
                         std::wcerr << "Failed to write to physical drive." << lastError << std::endl;
                         CloseHandle(hDrive);
-                        return;
+                        return false;
                     }
 
                     FlushFileBuffers(hDrive);
                     CloseHandle(hDrive);
-                    return;
+                    return true;
                 }
 
                 extra_entry.clear();
@@ -189,12 +190,10 @@ void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
         }
     }
     CloseHandle(hDrive);
-    this->root_Drives[ith_drive]->FAT32_Remove_File(drivePath, name_file, *this);
+    return this->root_Drives[ith_drive]->FAT32_Remove_File(drivePath, name_file, *this);
 }
-void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
+bool Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
 {
-    if (ith_drive < 0)
-        return;
     std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();
     auto it = this->offset_recover_started_rdet_entry.find(name_file);
     if (it != this->offset_recover_started_rdet_entry.end())
@@ -207,11 +206,11 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
         DWORD bytesRead;
 
         SetFilePointer(hDrive, this->offset_recover_started_rdet_entry[name_file].first, NULL, FILE_BEGIN);
-        BYTE rdet[512];
+        BYTE rdet[4096];
         if (!ReadFile(hDrive, rdet, sizeof(rdet), &bytesRead, NULL)) {
             std::wcerr << "Failed to read boot sector from physical drive." << std::endl;
             CloseHandle(hDrive);
-            return;
+            return false;
         }
         int started_offset = this->offset_recover_started_rdet_entry[name_file].second;
         for (int i = 0; i < this->started_byte_rdet_sdet[name_file].size(); i++)
@@ -238,11 +237,12 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
             DWORD lastError = GetLastError();
             std::wcerr << "Failed to write to physical drive." << lastError << std::endl;
             CloseHandle(hDrive);
-            return;
+            return false;
         }
 
         FlushFileBuffers(hDrive);
         CloseHandle(hDrive);
+        return true;
     }
     else
     {
@@ -252,13 +252,15 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
             std::cerr << "Failed to open drive: " << GetLastError() << std::endl;
         }
         DWORD bytesRead;
+        
         int offset = this->offset_recover_started_sdet_entry[name_file].first;
         SetFilePointer(hDrive, offset, NULL, FILE_BEGIN);
-        BYTE sdet[512];
+        
+        BYTE sdet[4096];
         if (!ReadFile(hDrive, sdet, sizeof(sdet), &bytesRead, NULL)) {
             std::wcerr << "Failed to read boot sector from physical drive." << std::endl;
             CloseHandle(hDrive);
-            return;
+            return false;
         }
         int started_offset = this->offset_recover_started_sdet_entry[name_file].second;
         for (int i = 0; i < this->started_byte_rdet_sdet[name_file].size(); i++)
@@ -281,14 +283,16 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
         }
 
         DWORD bytesWritten;
-        if (!WriteFile(hDrive, sdet, 512, &bytesWritten, NULL)) {
+        if (!WriteFile(hDrive, sdet, 4096, &bytesWritten, NULL)) {
             DWORD lastError = GetLastError();
             std::wcerr << "Failed to write to physical drive." << lastError << std::endl;
             CloseHandle(hDrive);
-            return;
+            return false;
         }
 
         FlushFileBuffers(hDrive);
         CloseHandle(hDrive);
+        return true;
     }
+    return false;
 }

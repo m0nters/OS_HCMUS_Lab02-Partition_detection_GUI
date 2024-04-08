@@ -609,7 +609,7 @@ public:
 	}
 	Directory* NTFS_Find_Parent_Directory(int parent_id);
 
-	void FAT32_Remove_File(std::wstring drivePath, std::string name_file, Computer& MyPC);
+	bool FAT32_Remove_File(std::wstring drivePath, std::string name_file, Computer& MyPC);
 	void setDrivePath(std::wstring drivePath) { this->drivePath = drivePath; };
 	std::wstring getDrivePath() { return drivePath; }
 	~Drive()
@@ -718,8 +718,8 @@ public:
 
 
 
-	void FAT32_Remove_File(int ith_drive, std::string name_file);
-	void FAT32_Recover_File(int ith_drive, std::string name_file);
+	bool FAT32_Remove_File(int ith_drive, std::string name_file);
+	bool FAT32_Recover_File(int ith_drive, std::string name_file);
 };
 
 

@@ -60,6 +60,7 @@ std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std:
             {
                 if (extra_entry[i][j] == 0xFF)
                     return str;
+
                 str.push_back(static_cast<char>(extra_entry[i][j]));
             }
         }
@@ -80,11 +81,13 @@ std::string FAT32_Create_Name(std::vector <std::vector <BYTE>> extra_entry, std:
                     else return str;
                 }
             }
+
             str.push_back(static_cast<char>(main_entry[i]));
         }
     }
     return str;
 }
+
 Date FAT32_Create_Date(std::vector <BYTE> main_entry)
 {
     std::vector <BYTE> bigedian_date(2);
@@ -98,6 +101,7 @@ Date FAT32_Create_Date(std::vector <BYTE> main_entry)
     d.day = (bigedian_date[1]) & 0x1F;
     return d;
 }
+
 Time FAT32_Create_Time(std::vector <BYTE> main_entry)
 {
     std::vector <BYTE> bigedian_time(3);
@@ -152,7 +156,6 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
                 copy(&rdet[start_byte], &rdet[start_byte + 32], back_inserter(main_entry)); // Doc 32 byte vao entry chinh
                 std::string name = FAT32_Create_Name(extra_entry, main_entry);
                 name.erase(std::remove(name.begin(), name.end(), 0x00), name.end());
-                name.erase(std::remove(name.begin(), name.end(), '\0'), name.end());
                 Date d = FAT32_Create_Date(main_entry);
                 Time t = FAT32_Create_Time(main_entry);
                 int started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
@@ -332,6 +335,7 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
             {
                 copy(&data[start_byte], &data[start_byte + 32], back_inserter(main_entry)); // Doc 32 byte vao entry chinh
                 std::string name = FAT32_Create_Name(extra_entry, main_entry);
+
                 name.erase(std::remove(name.begin(), name.end(), 0x00), name.end());
                 Date d = FAT32_Create_Date(main_entry);
                 Time t = FAT32_Create_Time(main_entry);
@@ -363,11 +367,6 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                 extra_entry = std::vector <std::vector <BYTE>>{};
                 main_entry = std::vector <BYTE>{};
             }
-            else if (attribute == 0x00)
-            {
-                CloseHandle(hDrive);
-                return;
-            }
             else
             {
                 extra_entry.clear();
@@ -380,18 +379,17 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
     CloseHandle(hDrive);
 }
 
-
-
-void Drive::FAT32_Remove_File(std::wstring drivePath, std::string name_file, Computer& MyPC)
+bool Drive::FAT32_Remove_File(std::wstring drivePath, std::string name_file, Computer& MyPC)
 {
     for (int i = 0; i < rootDirectories_Files.size(); i++)
     {
         if (dynamic_cast<Directory*>(rootDirectories_Files[i]))
         {
             if (dynamic_cast<Directory*>(rootDirectories_Files[i])->FAT32_Remove_File(drivePath, name_file, this->fat32bs, MyPC))
-                return;
+                return true;
         }
     }
+    return false;
 }
 
 bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file, FAT32_BOOTSECTOR bs, Computer& MyPC)
@@ -416,8 +414,7 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
             CloseHandle(hDrive);
             return false;
         }
-        std::vector <BYTE> data_each_cluster; data_each_cluster.assign(data, data + bytes_per_cluster);
-        Push_Data(data_each_cluster);
+
         int start_byte = 64; // Cho vong lap chay 32 byte cho moi vong lap
         std::vector <std::vector <BYTE>> extra_entry;
         std::vector <BYTE> main_entry;
@@ -463,7 +460,7 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
                     }
 
                     DWORD bytesWritten;
-                    if (!WriteFile(hDrive, data, 512, &bytesWritten, NULL)) {
+                    if (!WriteFile(hDrive, data, bytes_per_cluster, &bytesWritten, NULL)) {
                         DWORD lastError = GetLastError();
                         std::wcerr << "Failed to write to physical drive." << lastError << std::endl;
                         CloseHandle(hDrive);
@@ -499,3 +496,4 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
     }
     return false;
 }
+
