@@ -533,23 +533,22 @@ public:
 		}
 	}
 
-	long long getTotalSize()
+
+	void setToTalSize()
 	{
-		long long totalSize = 0;
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
 		{
 			if (dynamic_cast<Directory*>(rootDirectories_Files[i]))
 			{
-				totalSize += dynamic_cast<Directory*>(rootDirectories_Files[i])->getTotalSize();
+				total_size += dynamic_cast<Directory*>(rootDirectories_Files[i])->getTotalSize();
 			}
 			else
 			{
-				totalSize += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
+				total_size += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
 			}
 		}
-		total_size = totalSize;
-		return total_size;
 	}
+	long long getTotalSize() { return total_size; }
 
 	std::string getTotalSize_str() {
 		// round 2 decimal numbers
@@ -578,7 +577,7 @@ public:
 	}
 
 
-	void readData(std::wstring drivePath)
+	void FAT32_Read_Data(std::wstring drivePath)
 	{
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
 		{
@@ -622,18 +621,37 @@ public:
 
 class Computer {
 private:
-	std::map<std::string, int> offset_recover_started_rdet_entry;
+	std::map<std::string, std::pair<long long, int>> offset_recover_started_rdet_entry;
 	std::map<std::string, std::pair<int, int>> offset_recover_started_sdet_entry; // pair: .firt - offset cua file bi xoa trong sdet, .second - offset trong sdet
 	std::map<std::string, std::vector<BYTE>> started_byte_rdet_sdet;
 	std::vector<Drive*> root_Drives;
+	std::map<std::string, int> drive_to_order_map;
 public:
-	void setMapRDET(std::vector<BYTE> started_byte, int offset, std::string name_file)
+	std::string capitalizeString(const std::string& str) {
+		std::string result = str;
+		for (char& c : result) {
+			c = toupper(c);
+		}
+		return result;
+	}
+	int getOrderDrive(std::string target) {
+		std::string str_to_find = capitalizeString(target);
+		auto it = drive_to_order_map.find(str_to_find);
+		if (it != drive_to_order_map.end()) {
+			return drive_to_order_map[str_to_find];
+		}
+		else {
+			return -1; // in default, if the key is not in the map, the map will automatically return 0, but now we change it to -1
+		}
+	}
+	void setMapRDET(std::vector<BYTE> started_byte, long long rdet_offset, int first_entry_offset, std::string name_file)
 	{
 		for (int i = 0; i < started_byte.size(); i++)
 		{
 			this->started_byte_rdet_sdet[name_file].push_back(started_byte[i]);
 		}
-		offset_recover_started_rdet_entry[name_file] = offset;
+		offset_recover_started_rdet_entry[name_file].first = rdet_offset;
+		offset_recover_started_rdet_entry[name_file].second = first_entry_offset;
 	}
 	void setMapSDET(std::vector<BYTE> started_byte, int total_offset, int sdet_offset, std::string name_file)
 	{
@@ -671,7 +689,7 @@ public:
 
 			if (root_Drives[i]->getType() == "FAT32")
 			{
-				root_Drives[i]->readData(drivePath);
+				root_Drives[i]->FAT32_Read_Data(drivePath);
 			}
 			else
 			{
@@ -698,7 +716,7 @@ public:
 		}
 	}
 
-	
+
 
 	void FAT32_Remove_File(int ith_drive, std::string name_file);
 	void FAT32_Recover_File(int ith_drive, std::string name_file);

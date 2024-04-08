@@ -183,11 +183,6 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
                 extra_entry.clear();
                 main_entry.clear();
             }
-            /*else if ((attribute == 0x10 || attribute == 0x20) && rdet[start_byte] == 0xE5)
-            {
-                extra_entry.clear();
-                main_entry.clear();
-            }*/
             else if (attribute == 0x00)
             {
                 is_end = 1;
@@ -234,7 +229,7 @@ void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
                 is_empty = 0;
             if (!is_empty && value != 0xFF)
                 break;
-            if (value == 0xFF || value == 0xF7 || (value == 0x00 && is_empty))
+            if (value == 0xFF || value == 0xF7 || (value == 0x00 && is_empty) || (value == 0x0F))
             {
                 CloseHandle(hDrive);
                 return;
@@ -295,7 +290,7 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
     int bytes_per_cluster = bs.byte_per_sector * bs.sector_per_cluster;
     for (int i = 0; i < pos_cluster.size(); i++)
     {
-        int byte_cluster_pos = bs.byte_per_sector * (bs.sector_before_FAT_table + bs.num_of_FAT_tables * bs.sector_per_FAT + (pos_cluster[i] - bs.first_cluster_of_RDET) * bs.sector_per_cluster);
+        long long byte_cluster_pos = (long long)bs.byte_per_sector * (bs.sector_before_FAT_table + bs.num_of_FAT_tables * bs.sector_per_FAT + (pos_cluster[i] - bs.first_cluster_of_RDET) * bs.sector_per_cluster);
         SetFilePointer(hDrive, byte_cluster_pos, NULL, FILE_BEGIN);
         BYTE* data = new BYTE[bytes_per_cluster];
         if (!ReadFile(hDrive, data, bytes_per_cluster, &bytesRead, NULL)) {
@@ -351,6 +346,11 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                 }
                 extra_entry = std::vector <std::vector <BYTE>>{};
                 main_entry = std::vector <BYTE>{};
+            }
+            else if (attribute == 0x00)
+            {
+                CloseHandle(hDrive);
+                return;
             }
             else
             {
@@ -483,4 +483,3 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
     }
     return false;
 }
-

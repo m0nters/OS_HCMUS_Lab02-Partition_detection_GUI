@@ -8,16 +8,19 @@ void Computer::readDrives()
         std::wstring drivePath = L"\\\\.\\" + wideDriveLetter;
         if (root_Drives[i]->getType() == "NTFS")
         {
+            root_Drives[i]->setDrivePath(drivePath);
             NTFS_Read_VBR(i, drivePath);
             NTFS_Read_MFT(i, drivePath);
+            root_Drives[i]->NTFS_Read_Data(drivePath);
         }
         else if (root_Drives[i]->getType() == "FAT32")
         {
+            root_Drives[i]->setDrivePath(drivePath);
             FAT32_Read_BootSector(i, drivePath);
             FAT32_Read_RDET(i, drivePath);
+            root_Drives[i]->FAT32_Read_Data(drivePath);
         }
-        readData(drivePath);
-        root_Drives[i]->getTotalSize();
+        root_Drives[i]->setToTalSize();
     }
 }
 
@@ -76,6 +79,7 @@ void Computer::GetRemovableDriveNames() {
     {
         Drive* d = new Drive;
         d->setName(driveNames[i].substr(0, driveNames[i].size() - 1));
+        drive_to_order_map[d->getName()] = i;
         addRootDrive(d);
     }
 }
@@ -132,7 +136,7 @@ void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
                         started_byte.push_back(rdet[started_file_offset + i]);
                         rdet[started_file_offset + i] = 0xE5;
                     }
-                    this->setMapRDET(started_byte, started_file_offset, name_file);
+                    this->setMapRDET(started_byte, (long long)root_Drives[ith_drive]->getStartedByteRDET() + bytes_read - 512,  started_file_offset, name_file);
                     uint64_t offset = root_Drives[ith_drive]->getStartedByteRDET() + bytes_read - 512;
                     LARGE_INTEGER liOffset;
                     liOffset.QuadPart = offset;
@@ -189,10 +193,11 @@ void Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
 }
 void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
 {
+    if (ith_drive < 0)
+        return;
     std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();
     auto it = this->offset_recover_started_rdet_entry.find(name_file);
     if (it != this->offset_recover_started_rdet_entry.end())
-
     {
         HANDLE hDrive = CreateFileW(drivePath.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
@@ -200,25 +205,20 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
             std::cerr << "Failed to open drive: " << GetLastError() << std::endl;
         }
         DWORD bytesRead;
-        int offset = 0;
-        if (512 < this->offset_recover_started_rdet_entry[name_file])
-        {
-            offset = root_Drives[ith_drive]->getStartedByteRDET() + (int)(this->offset_recover_started_rdet_entry[name_file] / 512);
-        }
-        else offset = root_Drives[ith_drive]->getStartedByteRDET();
-        SetFilePointer(hDrive, offset, NULL, FILE_BEGIN);
+
+        SetFilePointer(hDrive, this->offset_recover_started_rdet_entry[name_file].first, NULL, FILE_BEGIN);
         BYTE rdet[512];
         if (!ReadFile(hDrive, rdet, sizeof(rdet), &bytesRead, NULL)) {
             std::wcerr << "Failed to read boot sector from physical drive." << std::endl;
             CloseHandle(hDrive);
             return;
         }
-        int started_offset = this->offset_recover_started_rdet_entry[name_file];
+        int started_offset = this->offset_recover_started_rdet_entry[name_file].second;
         for (int i = 0; i < this->started_byte_rdet_sdet[name_file].size(); i++)
         {
             rdet[started_offset + i * 32] = this->started_byte_rdet_sdet[name_file][i];
         }
-        uint64_t u_offset = offset;
+        uint64_t u_offset = this->offset_recover_started_rdet_entry[name_file].first;
         LARGE_INTEGER liOffset;
         liOffset.QuadPart = u_offset;
         if (!SetFilePointerEx(hDrive, liOffset, NULL, FILE_BEGIN))
@@ -263,7 +263,6 @@ void Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
         int started_offset = this->offset_recover_started_sdet_entry[name_file].second;
         for (int i = 0; i < this->started_byte_rdet_sdet[name_file].size(); i++)
         {
-            std::cout << std::hex << (int)sdet[started_offset + i * 32] << " ";
             sdet[started_offset + i * 32] = this->started_byte_rdet_sdet[name_file][i];
         }
         uint64_t u_offset = offset;
