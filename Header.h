@@ -261,6 +261,7 @@ public:
 	}
 	void makeGUI(Qt_GUI& w, QTreeWidgetItem*& folder)
 	{
+		int ith_drive = folder->data(0, Qt::UserRole + 1).toInt(); // call out the ith_drive data of the parent folder
 		for (int i = 0; i < contents.size(); i++)
 		{
 			Directory* dir_entity = dynamic_cast<Directory*>(contents[i]);
@@ -277,7 +278,7 @@ public:
 				folder->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
 				// ========================================================================================
-				dir_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_drive)); // save ith_drive where the folder belongs to
 				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
 				// ========================================================================================
 				dir_entity->makeGUI(w, dir_item);
@@ -299,7 +300,7 @@ public:
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
 					// ========================================================================================
-					file_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+					file_item->setData(0, Qt::UserRole + 1, QVariant(ith_drive)); // save ith_drive where the file belongs to
 					file_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(file_entity->getName()))); // save name_file
 					// ========================================================================================
 					file_item->setIcon(0, QIcon(".\\txt_icon.png"));
@@ -484,6 +485,7 @@ public:
 	}
 	void make_GUI(Qt_GUI& w, QTreeWidgetItem*& Drive)
 	{
+		int ith_dirve = QVariant(Drive->data(0, Qt::UserRole + 1)).toInt(); // call out the ith_drive
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
 		{
 			Directory* dir_entity = dynamic_cast<Directory*>(rootDirectories_Files[i]);
@@ -500,7 +502,7 @@ public:
 				Drive->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
 				// ========================================================================================
-				dir_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_dirve)); // save ith_drive where the folder belongs to
 				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
 				// ========================================================================================
 				dir_entity->makeGUI(w, dir_item);
@@ -522,7 +524,7 @@ public:
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
 					// ========================================================================================
-					file_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save ith_drive
+					file_item->setData(0, Qt::UserRole + 1, QVariant(ith_dirve)); // save ith_drive where the file belongs to
 					file_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(file_entity->getName()))); // save name_file
 					// ========================================================================================
 					file_item->setIcon(0, QIcon(".\\txt_icon.png"));
@@ -533,17 +535,19 @@ public:
 
 	long long getTotalSize()
 	{
+		long long totalSize = 0;
 		for (int i = 0; i < rootDirectories_Files.size(); i++)
 		{
 			if (dynamic_cast<Directory*>(rootDirectories_Files[i]))
 			{
-				total_size += dynamic_cast<Directory*>(rootDirectories_Files[i])->getTotalSize();
+				totalSize += dynamic_cast<Directory*>(rootDirectories_Files[i])->getTotalSize();
 			}
 			else
 			{
-				total_size += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
+				totalSize += dynamic_cast<File*>(rootDirectories_Files[i])->getTotalSize();
 			}
 		}
+		total_size = totalSize;
 		return total_size;
 	}
 
@@ -689,6 +693,7 @@ public:
 			);
 			w.get_current_treeWidget()->addTopLevelItem(drive_item);
 			drive_item->setIcon(0, QIcon(".\\drive_icon.png"));
+			drive_item->setData(0, Qt::UserRole + 1, QVariant(i)); // save the ith_drive data for each drive
 			root_Drives[i]->make_GUI(w, drive_item);
 		}
 	}
