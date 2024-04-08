@@ -43,7 +43,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -88,7 +88,11 @@
            </widget>
           </item>
           <item>
-           <widget class="QPlainTextEdit" name="delete_list"/>
+           <widget class="QPlainTextEdit" name="delete_list">
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -101,7 +105,7 @@
               <item>
                <widget class="QLabel" name="label">
                 <property name="text">
-                 <string>Tên drive cần restore </string>
+                 <string>Tên (hoặc số thứ tự) drive cần restore </string>
                 </property>
                 <property name="buddy">
                  <cstring>drive_input</cstring>

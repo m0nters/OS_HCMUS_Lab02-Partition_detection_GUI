@@ -209,17 +209,34 @@ void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
         return;
     }
     DWORD bytesRead;
-    int cluster_pos = get_pos_cluster(0) * 4;
+    int bytesread = 0;
+    int cluster_pos = get_pos_cluster(0) * 4; // 1 cluster doc 4 byte trong FAT1
     BYTE* fat1 = new BYTE[bs.byte_per_sector * bs.sector_per_FAT];
+    SetFilePointer(hDrive, bs.byte_per_sector * bs.sector_before_FAT_table, NULL, FILE_BEGIN);
+
+    if (!ReadFile(hDrive, fat1, bs.byte_per_sector * bs.sector_per_FAT, &bytesRead, NULL)) {
+        std::wcerr << "Failed to read FAT1 from physical drive." << std::endl;
+        CloseHandle(hDrive);
+        delete[] fat1;
+        return;
+    }
+    bytesread += bs.byte_per_sector * bs.sector_per_FAT;
     while (true)
     {
-        SetFilePointer(hDrive, bs.byte_per_sector * bs.sector_before_FAT_table, NULL, FILE_BEGIN);
+        if (cluster_pos >= bytesread)
+        {
+            SetFilePointer(hDrive, bs.byte_per_sector * bs.sector_before_FAT_table + bytesRead, NULL, FILE_BEGIN);
 
-        if (!ReadFile(hDrive, fat1, bs.byte_per_sector * bs.sector_per_FAT, &bytesRead, NULL)) {
-            std::wcerr << "Failed to read FAT1 from physical drive." << std::endl;
-            CloseHandle(hDrive);
-            delete[] fat1;
-            return;
+            if (!ReadFile(hDrive, fat1, bs.byte_per_sector * bs.sector_per_FAT, &bytesRead, NULL)) {
+                std::wcerr << "Failed to read FAT1 from physical drive." << std::endl;
+                CloseHandle(hDrive);
+                delete[] fat1;
+                return;
+            }
+            bytesread += bs.byte_per_sector * bs.sector_per_FAT;
+            cluster_pos -= bs.byte_per_sector * bs.sector_per_FAT;
+            if (cluster_pos >= bytesread)
+                continue;
         }
         bool is_empty = 1;
         for (int i = 0; i < 4; i++)
@@ -237,12 +254,11 @@ void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
         }
         cluster_pos = fat1[cluster_pos] | (fat1[cluster_pos + 1] << 8) | (fat1[cluster_pos + 2] << 16) | (fat1[cluster_pos + 3] << 24);
         add_cluster_pos(cluster_pos);
+        cluster_pos *= 4;
     }
     delete[] fat1;
     CloseHandle(hDrive);
 }
-
-
 
 void File::FAT32_Read_Data(Drive* dr, std::wstring drivePath)
 {

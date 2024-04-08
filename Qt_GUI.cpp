@@ -55,12 +55,20 @@ void Qt_GUI::on_delete_button_clicked() {
 		int ith_drive = selectedItem->data(0, Qt::UserRole + 1).toInt();
 		std::string name_file = selectedItem->data(0, Qt::UserRole + 2).toString().toStdString();
 
+		// update the delete_list
+		std::string str_to_add = ui.delete_list->toPlainText().toStdString();
+		str_to_add += "Partion " + std::to_string(ith_drive) + ": " + name_file + "\n";
+		ui.delete_list->setPlainText(QString::fromStdString(str_to_add));
+
+		// change the real data
+		clone_pc->FAT32_Remove_File(ith_drive, name_file);
+
+		// change the GUI
 		parent_selectedItem = selectedItem->parent();
 		if (parent_selectedItem) {
 			int childIndex = parent_selectedItem->indexOfChild(selectedItem);
 			parent_selectedItem->takeChild(childIndex);
 		}
-		clone_pc->FAT32_Remove_File(ith_drive, name_file);
 	}
 }
 
@@ -78,7 +86,19 @@ void Qt_GUI::on_restore_button_clicked() {
 
 	std::string name_file = ui.file_name_input->text().toStdString();
 
-	if (parent_selectedItem && selectedItem) // for the case the user try to restore file deleted in the previous sessions
-		parent_selectedItem->addChild(selectedItem);
+	// update the delete_list
+	std::string str_to_add = ui.delete_list->toPlainText().toStdString();
+	std::string sub_str = "Partion " + std::to_string(ith_drive) + ": " + name_file + "\n";
+	size_t pos = str_to_add.find(sub_str);
+	if (pos != std::string::npos) {
+		str_to_add.erase(pos, sub_str.length());
+	}
+	ui.delete_list->setPlainText(QString::fromStdString(str_to_add));
+
+	// change real data
 	clone_pc->FAT32_Recover_File(ith_drive, name_file);
+
+	// change GUI
+	if (parent_selectedItem && selectedItem) // for the case the user try to restore file deleted in the previous sessions
+		parent_selectedItem->addChild(selectedItem); 
 }
