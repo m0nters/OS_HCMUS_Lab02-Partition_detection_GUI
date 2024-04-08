@@ -2,7 +2,7 @@
 #include <QDesktopServices>
 #include <regex>
 
-std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // alter the GUI dynamically
+std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // mimic the current Computer object in main() to alter the GUI
 
 Qt_GUI::Qt_GUI(QWidget* parent)
 	: QMainWindow(parent)

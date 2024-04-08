@@ -52,6 +52,9 @@
             <property name="text">
              <string>Nội dung file .txt (Preview, read-only)</string>
             </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
             <property name="buddy">
              <cstring>plainTextEdit</cstring>
             </property>
@@ -83,7 +86,10 @@
           <item>
            <widget class="QLabel" name="label_5">
             <property name="text">
-             <string>Danh sách những file đã xóa trong phiên hiện tại</string>
+             <string>Danh sách những file đã xóa trong phiên hiện tại (read-only)</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
