@@ -731,5 +731,5 @@ Date FAT32_Create_Date(std::vector <BYTE> main_entry);
 Time FAT32_Create_Time(std::vector <BYTE> main_entry);
 void NTFS_Create_Date_Time(BYTE* attr, Header_Attribute h, Date& d, Time& t);
 int byteToTwosComplement(int byteValue);
-int NTFS_Read_BITMAP(BYTE* attr, Header_Attribute h);
+int NTFS_Read_BITMAP(BYTE* attr, Header_Attribute h, NTFS_VBR vbr, std::wstring drivePath);
 #endif

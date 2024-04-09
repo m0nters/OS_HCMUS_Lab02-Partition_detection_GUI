@@ -42,10 +42,10 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
         std::cout << "Failed to open physical drive." << std::endl;
         return;
     }
-    std::vector <int> avalable_father_folder(100, 0);
+    std::vector <int> avalable_father_folder(10000, 0);
     int end = 0;
     int cnt = 0;
-    while (end == 0 || (end != 0 && cnt <= end))
+    while (/*end == 0 || (end != 0 && cnt <= end)*/cnt < 1000)
     {
         DWORD lowOffset = static_cast<DWORD>(main_mft_offset_byte & 0xFFFFFFFF);
         DWORD highOffset = static_cast<DWORD>((main_mft_offset_byte >> 32) & 0xFFFFFFFF);
@@ -69,7 +69,6 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
             if (flag_file_directory_used == 0x01)
             {
                 File* f = new File;
-                int count_data = 0;
                 f->setAttributes("File");
                 Header_MFT_Entry mft_header;
                 mft_header.started_attribute_offset = mft[0x14] | mft[0x15] << 8;
@@ -140,8 +139,6 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                                     if (d != NULL)
                                     {
                                         d->addNewFile_Directory(f);
-                                        std::cout << "Started byte: " << started_byte << std::endl;
-                                        std::cout << "Byte used: " << mft_header.byte_used << std::endl;
                                     }
                                     else
                                     {
@@ -154,9 +151,8 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
 
                         }
                     }
-                    else if (h.type_id == 128 && count_data == 0)
+                    else if (h.type_id == 128)
                     {
-                        count_data++;
                         if (h.flag_non_resident == 0)
                         {
                             f->setTotalSize(h.attribute_data_size);
@@ -177,7 +173,7 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                     }
                     else if (h.type_id == 176 && cnt == 0)
                     {
-                        end = NTFS_Read_BITMAP(attr, h);
+                        end = NTFS_Read_BITMAP(attr, h, vbr, drivePath);
                     }
                     started_byte += size;
                     delete[] attr;
@@ -279,7 +275,7 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                     }
                     else if (h.type_id == 176 && cnt == 0)
                     {
-                        end = NTFS_Read_BITMAP(attr, h);
+                        end = NTFS_Read_BITMAP(attr, h, vbr, drivePath);
                     }
                     started_byte += size;
                     delete[] attr;
@@ -294,68 +290,72 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
     CloseHandle(hDrive);
 }
 
-void File::NTFS_Nonresident_Read_Data(std::wstring drivePath, NTFS_VBR vbr)
+
+int NTFS_Read_BITMAP(BYTE* attr, Header_Attribute h, NTFS_VBR vbr, std::wstring drivePath)
 {
+    int offset = attr[32] | (attr[33] << 8);
+
+    std::vector<BYTE> data_BITMAP;
+
+    BYTE* data_attr = new BYTE[10];
+    std::copy(attr + offset, attr + offset + 10, data_attr);
+    // Doc datarun offset
+    int firstDigit = (data_attr[0] >> 4) & 0xF;
+    int secondDigit = data_attr[0] & 0xF;
+    int x = 0, first_cluster = 0;
+    for (int i = 0; i < secondDigit; i++)
+    {
+        x |= static_cast<int>(data_attr[1 + i + i] << (i * 8));
+    }
+    for (int i = 0; i < firstDigit; i++)
+    {
+        first_cluster |= static_cast<int>(data_attr[1 + secondDigit + i] << (i * 8));
+    }
+    long long d_offset = (long long)vbr.byte_per_sector * vbr.sector_per_cluster * first_cluster;
+    long long datasize = (long long)secondDigit * vbr.byte_per_sector * vbr.sector_per_cluster;
     HANDLE hDrive = CreateFile(drivePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (hDrive == INVALID_HANDLE_VALUE) {
         std::cout << "Failed to open physical drive." << std::endl;
-        return;
+        return 1;
     }
 
-    while (nonresidentinfo.datasize > 0)
+    std::vector <BYTE> Data;
+    DWORD lowOffset = static_cast<DWORD>(d_offset & 0xFFFFFFFF);
+    DWORD highOffset = static_cast<DWORD>((d_offset >> 32) & 0xFFFFFFFF);
+    DWORD result = SetFilePointer(hDrive, lowOffset, reinterpret_cast<PLONG>(&highOffset), FILE_BEGIN);
+    if (result == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
+        std::cerr << "Failed to set file pointer." << std::endl;
+        CloseHandle(hDrive);
+        return 1;
+    }
+    DWORD bytesRead;
+    BYTE* DATA = new BYTE[datasize];
+    if (!ReadFile(hDrive, DATA, vbr.byte_per_sector * vbr.sector_per_cluster, &bytesRead, NULL)) {
+        std::wcerr << "Failed to read cluster from physical drive." << std::endl;
+        CloseHandle(hDrive);
+        delete[] DATA;
+        return 1;
+    }
+    for (int i = datasize - 1; i >= 0; i--)
     {
-        std::vector <BYTE> Data;
-        DWORD lowOffset = static_cast<DWORD>(nonresidentinfo.offset & 0xFFFFFFFF);
-        DWORD highOffset = static_cast<DWORD>((nonresidentinfo.offset >> 32) & 0xFFFFFFFF);
-        DWORD result = SetFilePointer(hDrive, lowOffset, reinterpret_cast<PLONG>(&highOffset), FILE_BEGIN);
-        if (result == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
-            std::cerr << "Failed to set file pointer." << std::endl;
-            CloseHandle(hDrive);
-            return;
-        }
-        DWORD bytesRead;
-        BYTE* DATA = new BYTE[vbr.byte_per_sector * vbr.sector_per_cluster];
-        if (!ReadFile(hDrive, DATA, vbr.byte_per_sector * vbr.sector_per_cluster, &bytesRead, NULL)) {
-            std::wcerr << "Failed to read cluster from physical drive." << std::endl;
-            CloseHandle(hDrive);
-            delete[] DATA;
-            return;
-        }
-        int cnt = 0;
-        while (cnt < vbr.byte_per_sector * vbr.sector_per_cluster && cnt < nonresidentinfo.datasize)
+        if (DATA[i] != 0x00)
         {
-            if (DATA[cnt] == 0xFF)
+            BYTE currentByte = DATA[i];
+            for (int bitIndex = 0; bitIndex < 8; bitIndex++)
             {
-                if (DATA[cnt + 1] == 0xFF && DATA[cnt + 2] == 0xFF && DATA[cnt + 3] == 0xFF)
+                BYTE bitmask = 1 << bitIndex;
+                if (currentByte & bitmask)
                 {
-                    Push_Data(Data);
-                    delete[] DATA;
-                    return;
+                    int end = (i + 1) * 8 - bitIndex;
+                    return end;
                 }
             }
-            Data.push_back(DATA[cnt]);
-            cnt++;
         }
-        Push_Data(Data);
-        nonresidentinfo.offset += (long long)(vbr.byte_per_sector * vbr.sector_per_cluster);
-        nonresidentinfo.datasize -= (long long)(vbr.byte_per_sector * vbr.sector_per_cluster);
-        delete[] DATA;
     }
+    delete[] DATA;
     CloseHandle(hDrive);
 }
 
-int NTFS_Read_BITMAP(BYTE* attr, Header_Attribute h)
-{
-    BYTE* data_attr = new BYTE[h.size_of_attribute];
-    std::copy(attr + h.attribute_data_offset, attr + h.attribute_data_offset + h.size_of_attribute, data_attr);
-    for (long long i = h.size_of_attribute - 1; i >= 0; i--)
-    {
-        if (data_attr[i] == 0x01)
-        {
-            return i;
-        }
-    }
-}
 void NTFS_Create_Date_Time(BYTE* attr, Header_Attribute h, Date& d, Time& t)
 {
     BYTE* data_attr = new BYTE[h.attribute_data_size];
@@ -405,9 +405,9 @@ Directory* Drive::NTFS_Find_Parent_Directory(int parent_id)
     {
         if (dynamic_cast<Directory*>(rootDirectories_Files[i]))
         {
-            if (static_cast<Directory*>(rootDirectories_Files[i])->NTFS_Get_ID() == parent_id)
-                return static_cast<Directory*>(rootDirectories_Files[i]);
-            Directory* d = static_cast<Directory*>(rootDirectories_Files[i])->NTFS_Find_Parent_Directory(parent_id);
+            if (dynamic_cast<Directory*>(rootDirectories_Files[i])->NTFS_Get_ID() == parent_id)
+                return dynamic_cast<Directory*>(rootDirectories_Files[i]);
+            Directory* d = dynamic_cast<Directory*>(rootDirectories_Files[i])->NTFS_Find_Parent_Directory(parent_id);
             if (d)
                 return d;
         }
@@ -426,7 +426,9 @@ Directory* Directory::NTFS_Find_Parent_Directory(int parent_id)
     {
         if (dynamic_cast<Directory*>(contents[i]))
         {
-            return dynamic_cast<Directory*>(contents[i])->NTFS_Find_Parent_Directory(parent_id);
+            Directory* d = dynamic_cast<Directory*>(contents[i])->NTFS_Find_Parent_Directory(parent_id);
+            if (d != NULL)
+                return d;
         }
     }
     return NULL;
@@ -449,9 +451,57 @@ void File::NTFS_Read_Non_Resident_Info(BYTE* attr, NTFS_VBR vbr, int datarun_off
         first_cluster |= static_cast<int>(data_attr[1 + secondDigit + i] << (i * 8));
     }
     long long offset = (long long)vbr.byte_per_sector * vbr.sector_per_cluster * first_cluster;
-    std::vector <BYTE> data;
     nonresidentinfo.datasize = datasize;
     nonresidentinfo.offset = offset;
+}
+void File::NTFS_Nonresident_Read_Data(std::wstring drivePath, NTFS_VBR vbr)
+{
+    HANDLE hDrive = CreateFile(drivePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+    if (hDrive == INVALID_HANDLE_VALUE) {
+        std::cout << "Failed to open physical drive." << std::endl;
+        return;
+    }
+
+    while (nonresidentinfo.datasize > 0)
+    {
+        std::vector <BYTE> Data;
+        DWORD lowOffset = static_cast<DWORD>(nonresidentinfo.offset & 0xFFFFFFFF);
+        DWORD highOffset = static_cast<DWORD>((nonresidentinfo.offset >> 32) & 0xFFFFFFFF);
+        DWORD result = SetFilePointer(hDrive, lowOffset, reinterpret_cast<PLONG>(&highOffset), FILE_BEGIN);
+        if (result == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR) {
+            std::cerr << "Failed to set file pointer." << std::endl;
+            CloseHandle(hDrive);
+            return;
+        }
+        DWORD bytesRead;
+        BYTE* DATA = new BYTE[vbr.byte_per_sector * vbr.sector_per_cluster];
+        if (!ReadFile(hDrive, DATA, vbr.byte_per_sector * vbr.sector_per_cluster, &bytesRead, NULL)) {
+            std::wcerr << "Failed to read cluster from physical drive." << std::endl;
+            CloseHandle(hDrive);
+            delete[] DATA;
+            return;
+        }
+        int cnt = 0;
+        while (cnt < vbr.byte_per_sector * vbr.sector_per_cluster && cnt < nonresidentinfo.datasize)
+        {
+            if (DATA[cnt] == 0xFF)
+            {
+                if (DATA[cnt + 1] == 0xFF && DATA[cnt + 2] == 0xFF && DATA[cnt + 3] == 0xFF)
+                {
+                    Push_Data(Data);
+                    delete[] DATA;
+                    return;
+                }
+            }
+            Data.push_back(DATA[cnt]);
+            cnt++;
+        }
+        Push_Data(Data);
+        nonresidentinfo.offset += (long long)(vbr.byte_per_sector * vbr.sector_per_cluster);
+        nonresidentinfo.datasize -= (long long)(vbr.byte_per_sector * vbr.sector_per_cluster);
+        delete[] DATA;
+    }
+    CloseHandle(hDrive);
 }
 
 void File::NTFS_Read_Resident_Data(BYTE* attr, Header_Attribute h)

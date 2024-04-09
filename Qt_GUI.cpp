@@ -3,7 +3,7 @@
 #include <regex>
 #include <qmessagebox.h>
 
-std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // mimic the current Computer object in main() to alter the GUI
+std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // mimic the current Computer instance in main() to alter the GUI
 
 Qt_GUI::Qt_GUI(QWidget* parent)
 	: QMainWindow(parent)
@@ -28,8 +28,6 @@ Qt_GUI::Qt_GUI(QWidget* parent)
 
 Qt_GUI::~Qt_GUI()
 {
-	delete selectedItem;
-	delete parent_selectedItem;
 }
 
 void Qt_GUI::QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size) {
@@ -70,30 +68,28 @@ void Qt_GUI::keyPressEvent(QKeyEvent* event)
 }
 
 void Qt_GUI::on_delete_button_clicked() {
-	if (!selectedItem) return;
-
+	if (!selectedItem) return; // if no item is selected, do nothing
 	parent_selectedItem = selectedItem->parent();
 
 	int ith_drive = selectedItem->data(0, Qt::UserRole + 1).toInt();
-	std::string name_file = selectedItem->data(0, Qt::UserRole + 2).toString().toStdString();
+	std::string name_file = selectedItem->data(0, Qt::UserRole + 2).toString().toStdString(); // return empty if it's a drive item, which is fine since there is no way user can set foler/file's name empty
 	if (deleted_map.find({ ith_drive, name_file }) != deleted_map.end()) // IN CASE OF SPAMMING DELETE BUTTON FOR 1 ITEM
 		return;
-	deleted_map[{ith_drive, name_file}] = { selectedItem, parent_selectedItem }; // create an identity mapping for each deleted node in case mass recovery in the future
 
-	// update the deleted_list_box in GUI
-	std::string previous_str = ui.deleted_list_box->toPlainText().toStdString();
-	std::string str_to_add = "Drive " + std::to_string(ith_drive) + ": " + name_file + "\n";
-	std::string current_str = previous_str + str_to_add;
-
-	ui.deleted_list_box->setPlainText(QString::fromStdString(current_str));
 	// change the real data
 	bool success = clone_pc->FAT32_Remove_File(ith_drive, name_file);
-	if (!success) { // this should never fail, but put it here just in case
-		QMessageBox::critical(this, "Không thể xóa file đã chọn", "Đã xảy ra lỗi, vui lòng thử lại hoặc đóng chương trình và thử lại.");
+	if (!success) { // this should only appear when you try to delete the drive item
+		QMessageBox::critical(this, "Không thể xóa item đã chọn", "Không thể xóa bản thân partition bởi nó là một phần của ổ đĩa.");
 		return;
 	}
 
 	// change the GUI
+	// // update the deleted_list_box in GUI
+	deleted_map[{ith_drive, name_file}] = { selectedItem, parent_selectedItem }; // create an identity mapping for each deleted node in case mass recovery in the future
+	std::string previous_str = ui.deleted_list_box->toPlainText().toStdString();
+	std::string str_to_add = "Drive " + std::to_string(ith_drive) + ": " + name_file + "\n";
+	std::string current_str = previous_str + str_to_add;
+	ui.deleted_list_box->setPlainText(QString::fromStdString(current_str));
 	if (parent_selectedItem) {
 		int childIndex = parent_selectedItem->indexOfChild(selectedItem);
 		parent_selectedItem->takeChild(childIndex);
@@ -118,39 +114,30 @@ void Qt_GUI::on_restore_button_clicked() {
 	int ith_drive = 0;
 	if (is_nonneg_num(ui.drive_input->text().toStdString())) // if the user inputs number, take that number
 		ith_drive = ui.drive_input->text().toInt();
-	else // if it's name (string), convert to the corresponding number
+	else // if it's name (string), convert to the corresponding number using map
 		ith_drive = clone_pc->getOrderDrive(ui.drive_input->text().toStdString());
 	std::string name_file = ui.name_input->text().toStdString();
 
-	// if the node to restore exists in the deleted_map, remove it from the map and restore it
-	QTreeWidgetItem* node = nullptr;
-	QTreeWidgetItem* parent = nullptr;
-	if (deleted_map.find({ ith_drive, name_file }) != deleted_map.end()) {
-		node = deleted_map[{ith_drive, name_file}].first;
-		parent = deleted_map[{ith_drive, name_file}].second;
-		deleted_map.erase({ ith_drive, name_file }); // not only to look up for the next time, but also make the map lighter
-	}
-	else {
-		QMessageBox::critical(this, "Không thể restore file đã chọn", "Thông tin file chọn restore không khớp danh sách các thông tin tương ứng của các file đã xóa ở phiên hiện tại.\nHoặc có thể là file đã được restore trước đó rồi, hoặc vui lòng kiểm tra kĩ lại nhập liệu tên (hoặc số thứ tự) drive cần restore hoặc tên file cần restore");
-		return; // IN CASE OF SPAMMING RESTORE BUTTON FOR 1 ITEM
+	// change real data
+	bool success = clone_pc->FAT32_Recover_File(ith_drive, name_file);
+	if (!success) {
+		QMessageBox::critical(this, "Không thể restore item đã chọn", "Thông tin item chọn restore không khớp danh sách các thông tin tương ứng của các item đã xóa ở phiên hiện tại.\nHoặc có thể là item đã được restore trước đó rồi, hoặc vui lòng kiểm tra kĩ lại nhập liệu tên (hoặc số thứ tự) drive cần restore hoặc tên item cần restore");
+		return;
 	}
 
-	// update the delete_list_box in GUI
+	// change GUI
+	auto pair = deleted_map[{ith_drive, name_file}]; // take out pair <node, parent>, it exists since the backend code above ran successfully
+	deleted_map.erase({ ith_drive, name_file }); // remove that pair out of the deleted_map, only to have a proper map to look up for the next time, but also make the map lighter
+	QTreeWidgetItem* node = pair.first;
+	QTreeWidgetItem* parent = pair.second;
+	parent->addChild(node);
+
+	// // update the deleted_list_box in GUI
 	std::string current_str = ui.deleted_list_box->toPlainText().toStdString();
 	std::string deleted_file_str = "Drive " + std::to_string(ith_drive) + ": " + name_file + "\n";
 	size_t pos = current_str.find(deleted_file_str); // this should never fail since we have checked the existence condtion above
 	current_str.erase(pos, deleted_file_str.length());
 	ui.deleted_list_box->setPlainText(QString::fromStdString(current_str));
-
-	// change real data
-	bool success = clone_pc->FAT32_Recover_File(ith_drive, name_file);
-	if (!success) { // this should never fail, again
-		QMessageBox::critical(this, "Không thể restore file đã chọn", "Đã xảy ra lỗi, vui lòng thử lại hoặc đóng chương trình và thử lại.");
-		return;
-	}
-
-	// change GUI
-	parent->addChild(node);
 }
 
 void Qt_GUI::onDriveOrFileNameChanged()
