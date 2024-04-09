@@ -1,7 +1,5 @@
 #include "Header.h"
 
-
-
 void Computer::FAT32_Read_BootSector(int ith_drive, std::wstring drivePath)
 {
     HANDLE hDrive = CreateFile(drivePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -202,7 +200,7 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
     CloseHandle(hDrive);
 }
 
-void FileSystemEntity::FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
+void FileSystemEntity::FAT32_Read_Next_Cluster(Drive* dr, std::wstring drivePath)
 {
     FAT32_BOOTSECTOR bs = dr->getBootSectorIn4();
     HANDLE hDrive = CreateFile(drivePath.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -496,4 +494,3 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
     }
     return false;
 }
-

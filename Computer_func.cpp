@@ -192,6 +192,7 @@ bool Computer::FAT32_Remove_File(int ith_drive, std::string name_file)
     CloseHandle(hDrive);
     return this->root_Drives[ith_drive]->FAT32_Remove_File(drivePath, name_file, *this);
 }
+
 bool Computer::FAT32_Recover_File(int ith_drive, std::string name_file)
 {
     std::wstring drivePath = root_Drives[ith_drive]->getDrivePath();

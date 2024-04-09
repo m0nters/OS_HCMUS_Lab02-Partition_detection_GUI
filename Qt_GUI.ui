@@ -124,7 +124,10 @@
                <item>
                 <widget class="QLabel" name="drive_input_label">
                  <property name="text">
-                  <string>Tên (hoặc số thứ tự) drive cần restore </string>
+                  <string>Tên (1 chữ cái, không phân biệt hoa/thường) (A, b, C,..) hoặc số thứ tự (0, 1, 2,...) drive cần restore</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
                  </property>
                  <property name="buddy">
                   <cstring>drive_input</cstring>
@@ -141,7 +144,10 @@
                <item>
                 <widget class="QLabel" name="name_input_label">
                  <property name="text">
-                  <string>Tên file cần restore (Chú ý có phân biệt hoa thường!)</string>
+                  <string>Tên file cần restore (có phân biệt hoa/thường, dấu cách)</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
                  </property>
                  <property name="buddy">
                   <cstring>name_input</cstring>
@@ -181,7 +187,7 @@
          <item>
           <widget class="QLabel" name="notice_sign">
            <property name="text">
-            <string>Lưu ý: chỉ có thể restore file đã xóa trong cùng 1 phiên, tức những file hiện trong danh sách trên. Nếu ta xóa file xong tắt chương trình rồi mở lại thì không restore được nữa!</string>
+            <string>Lưu ý: chỉ có thể restore file đã xóa trong cùng 1 phiên, tức những file hiện trong danh sách trên.</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignmentFlag::AlignCenter</set>

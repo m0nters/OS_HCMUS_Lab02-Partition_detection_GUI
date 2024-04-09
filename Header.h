@@ -181,7 +181,7 @@ public:
 
 	void setTotalSize(long long size) { this->total_size = size; }
 	long long getTotalSize() { return total_size; }
-	void FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath);
+	void FAT32_Read_Next_Cluster(Drive* dr, std::wstring drivePath);
 
 	virtual void displayInfo() {};
 	virtual ~FileSystemEntity() {};
@@ -209,7 +209,7 @@ public:
 
 	void FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
 	{
-		FileSystemEntity::FAT32_Read_Next_Sector(dr, drivePath);
+		FileSystemEntity::FAT32_Read_Next_Cluster(dr, drivePath);
 	}
 	void FAT32_Read_Data(Drive* dr, std::wstring drivePath);
 	void byteArrayToString();
@@ -259,7 +259,7 @@ public:
 			contents[i]->displayInfo();
 		}
 	}
-	void makeGUI(Qt_GUI& w, QTreeWidgetItem*& folder)
+	void make_GUI(Qt_GUI& w, QTreeWidgetItem*& folder)
 	{
 		int ith_drive = folder->data(0, Qt::UserRole + 1).toInt(); // call out the ith_drive data of the parent folder
 		for (int i = 0; i < contents.size(); i++)
@@ -281,7 +281,7 @@ public:
 				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_drive)); // save ith_drive where the folder belongs to
 				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
 				// ========================================================================================
-				dir_entity->makeGUI(w, dir_item);
+				dir_entity->make_GUI(w, dir_item);
 			}
 			else
 			{
@@ -359,7 +359,7 @@ public:
 
 	void FAT32_Read_Next_Sector(Drive* dr, std::wstring drivePath)
 	{
-		FileSystemEntity::FAT32_Read_Next_Sector(dr, drivePath);
+		FileSystemEntity::FAT32_Read_Next_Cluster(dr, drivePath);
 	}
 
 	void FAT32_Read_Data(Drive* dr, std::wstring drivePath)
@@ -505,7 +505,7 @@ public:
 				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_dirve)); // save ith_drive where the folder belongs to
 				dir_item->setData(0, Qt::UserRole + 2, QVariant(QString::fromStdString(dir_entity->getName()))); // save name_file
 				// ========================================================================================
-				dir_entity->makeGUI(w, dir_item);
+				dir_entity->make_GUI(w, dir_item);
 			}
 			else // is file
 			{

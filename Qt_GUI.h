@@ -4,7 +4,6 @@
 
 #include "ui_Qt_GUI.h"
 #include <QtWidgets/QMainWindow>
-#include <QFileSystemModel>
 #include <QKeyEvent>
 #include <set>
 

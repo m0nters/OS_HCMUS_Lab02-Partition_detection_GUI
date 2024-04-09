@@ -77,7 +77,7 @@ void Qt_GUI::on_delete_button_clicked() {
 	int ith_drive = selectedItem->data(0, Qt::UserRole + 1).toInt();
 	std::string name_file = selectedItem->data(0, Qt::UserRole + 2).toString().toStdString();
 	if (deleted_map.find({ ith_drive, name_file }) != deleted_map.end()) // IN CASE OF SPAMMING DELETE BUTTON FOR 1 ITEM
-		return; 
+		return;
 	deleted_map[{ith_drive, name_file}] = { selectedItem, parent_selectedItem }; // create an identity mapping for each deleted node in case mass recovery in the future
 
 	// update the deleted_list_box in GUI
@@ -88,7 +88,7 @@ void Qt_GUI::on_delete_button_clicked() {
 	ui.deleted_list_box->setPlainText(QString::fromStdString(current_str));
 	// change the real data
 	bool success = clone_pc->FAT32_Remove_File(ith_drive, name_file);
-	if (!success) { // this should never happen
+	if (!success) { // this should never fail, but put it here just in case
 		QMessageBox::critical(this, "Không thể xóa file đã chọn", "Đã xảy ra lỗi, vui lòng thử lại hoặc đóng chương trình và thử lại.");
 		return;
 	}
@@ -100,47 +100,57 @@ void Qt_GUI::on_delete_button_clicked() {
 	}
 }
 
-bool isNumber(const std::string& s) {
-	static const std::regex num_regex("\\s*[+-]?\\d+(\\.\\d+)?\\s*");
-	return std::regex_match(s, num_regex);
+bool is_nonneg_num(const std::string& s) {
+	if (s.empty() || (!isdigit(s[0]))) {
+		return false;
+	}
+
+	for (char c : s) {
+		if (!isdigit(c)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void Qt_GUI::on_restore_button_clicked() {
 	int ith_drive = 0;
-	if (isNumber(ui.drive_input->text().toStdString()))
+	if (is_nonneg_num(ui.drive_input->text().toStdString())) // if the user inputs number, take that number
 		ith_drive = ui.drive_input->text().toInt();
-	else
+	else // if it's name (string), convert to the corresponding number
 		ith_drive = clone_pc->getOrderDrive(ui.drive_input->text().toStdString());
 	std::string name_file = ui.name_input->text().toStdString();
 
+	// if the node to restore exists in the deleted_map, remove it from the map and restore it
+	QTreeWidgetItem* node = nullptr;
+	QTreeWidgetItem* parent = nullptr;
+	if (deleted_map.find({ ith_drive, name_file }) != deleted_map.end()) {
+		node = deleted_map[{ith_drive, name_file}].first;
+		parent = deleted_map[{ith_drive, name_file}].second;
+		deleted_map.erase({ ith_drive, name_file }); // not only to look up for the next time, but also make the map lighter
+	}
+	else {
+		QMessageBox::critical(this, "Không thể restore file đã chọn", "Thông tin file chọn restore không khớp danh sách các thông tin tương ứng của các file đã xóa ở phiên hiện tại.\nHoặc có thể là file đã được restore trước đó rồi, hoặc vui lòng kiểm tra kĩ lại nhập liệu tên (hoặc số thứ tự) drive cần restore hoặc tên file cần restore");
+		return; // IN CASE OF SPAMMING RESTORE BUTTON FOR 1 ITEM
+	}
 
 	// update the delete_list_box in GUI
 	std::string current_str = ui.deleted_list_box->toPlainText().toStdString();
 	std::string deleted_file_str = "Drive " + std::to_string(ith_drive) + ": " + name_file + "\n";
-	size_t pos = current_str.find(deleted_file_str);
-	if (pos != std::string::npos) { // again, in case of spamming delete button for 1 item
-		current_str.erase(pos, deleted_file_str.length());
-	}
-	else {
-		QMessageBox::critical(this, "Không thể restore file đã chọn", "Thông tin file chọn restore không khớp danh sách các thông tin tương ứng của các file đã xóa ở phiên hiện tại.\nHoặc có thể là file đã được restore trước đó rồi, hoặc vui lòng kiểm tra kĩ lại nhập liệu tên (hoặc số thứ tự) drive cần restore hoặc tên file cần restore");
-		return;
-	}
+	size_t pos = current_str.find(deleted_file_str); // this should never fail since we have checked the existence condtion above
+	current_str.erase(pos, deleted_file_str.length());
 	ui.deleted_list_box->setPlainText(QString::fromStdString(current_str));
 
 	// change real data
 	bool success = clone_pc->FAT32_Recover_File(ith_drive, name_file);
-	if (!success) { // this should never happen, again
+	if (!success) { // this should never fail, again
 		QMessageBox::critical(this, "Không thể restore file đã chọn", "Đã xảy ra lỗi, vui lòng thử lại hoặc đóng chương trình và thử lại.");
 		return;
 	}
 
 	// change GUI
-	QTreeWidgetItem* node = deleted_map[{ith_drive, name_file}].first;
-	QTreeWidgetItem* parent = deleted_map[{ith_drive, name_file}].second;
-
-	// for the case the user try to restore file deleted in the previous sessions
-	if (parent && node)
-		parent->addChild(node);
+	parent->addChild(node);
 }
 
 void Qt_GUI::onDriveOrFileNameChanged()

@@ -69,6 +69,7 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
             if (flag_file_directory_used == 0x01)
             {
                 File* f = new File;
+                int count_data = 0;
                 f->setAttributes("File");
                 Header_MFT_Entry mft_header;
                 mft_header.started_attribute_offset = mft[0x14] | mft[0x15] << 8;
@@ -153,8 +154,9 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
 
                         }
                     }
-                    else if (h.type_id == 128)
+                    else if (h.type_id == 128 && count_data == 0)
                     {
+                        count_data++;
                         if (h.flag_non_resident == 0)
                         {
                             f->setTotalSize(h.attribute_data_size);
