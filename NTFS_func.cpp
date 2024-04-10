@@ -33,7 +33,8 @@ void Computer::NTFS_Read_VBR(int ith_drive, std::wstring drivePath)
 
 
 
-void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
+void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath)
+{
     int drive_id = 5;
     NTFS_VBR vbr = root_Drives[ith_drive]->getVBRIn4();
     long long main_mft_offset_byte = (long long)vbr.byte_per_sector * vbr.sector_per_cluster * vbr.started_cluster_of_MFT;
@@ -45,7 +46,7 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
     std::vector <int> avalable_father_folder(10000, 0);
     int end = 0;
     int cnt = 0;
-    while (/*end == 0 || (end != 0 && cnt <= end)*/cnt < 1000)
+    while (end == 0 || (end != 0 && cnt <= end))
     {
         DWORD lowOffset = static_cast<DWORD>(main_mft_offset_byte & 0xFFFFFFFF);
         DWORD highOffset = static_cast<DWORD>((main_mft_offset_byte >> 32) & 0xFFFFFFFF);
@@ -69,7 +70,6 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
             if (flag_file_directory_used == 0x01)
             {
                 File* f = new File;
-                f->setAttributes("File");
                 Header_MFT_Entry mft_header;
                 mft_header.started_attribute_offset = mft[0x14] | mft[0x15] << 8;
                 mft_header.flag = mft[0x16] | mft[0x17] << 8;
@@ -80,9 +80,10 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
 
                 //Doc attributes
                 int started_byte = mft_header.started_attribute_offset;
+                int cnt_data_attribute = 0;
+                int cnt_data_run = 0;
                 while (started_byte < mft_header.byte_used)
                 {
-
                     //Kich thuoc 1 attribute 
                     int size = mft[started_byte + 0x04] | (mft[started_byte + 0x05] << 8) | (mft[started_byte + 0x06] << 16) | (mft[started_byte + 0x07] << 24);
                     if (started_byte + size > mft_header.byte_used || size == 0)
@@ -114,45 +115,62 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                     {
                         int x = h.attribute_data_offset;
                         int flag = attr[x + 56] | (attr[x + 57] << 8) | (attr[x + 58] << 16) | (attr[x + 59] << 24);
-                        int mask = 2;
-                        bool is_Hiden = (flag & mask) == 2;
-                        if (((is_Hiden) || h.attribute_data_size == 0) && cnt != 0)
+                        int flag_attribute = flag & 0xF;
+                        std::string str_attribute;
+                        switch (flag_attribute)
                         {
-                            delete[] attr;
-                            delete f;
+                        case 1:
+                            str_attribute = "ReadOnly";
+                            break;
+                        case 2:
+                            str_attribute = "Hiden";
+                            break;
+                        case 3:
+                            str_attribute = "ReadOnly, Hiden";
+                            break;
+                        case 4:
+                            str_attribute = "System";
+                            break;
+                        case 5:
+                            str_attribute = "System, ReadOnly";
+                            break;
+                        case 6:
+                            str_attribute = "System, Hiden";
+                            break;
+                        case 7:
+                            str_attribute = "System, ReadOnly, Hiden";
                             break;
                         }
-                        if (cnt != 0)
+                        f->setAttributes(str_attribute);
+                        f->setName(NTFS_Create_Name(attr, h));
+                        int parentID = attr[x] | (attr[x + 1] << 8) | (attr[x + 2] << 16) | (attr[x + 3] << 24) | (attr[x + 4] << 32) | (attr[x + 5] << 40);
+                        if (parentID == drive_id)
                         {
-                            f->setName(NTFS_Create_Name(attr, h));
-                            int parentID = attr[x] | (attr[x + 1] << 8) | (attr[x + 2] << 16) | (attr[x + 3] << 24) | (attr[x + 4] << 32) | (attr[x + 5] << 40);
-                            if (parentID == drive_id)
-                            {
-                                root_Drives[ith_drive]->addNewFile_Directory(f);
-
-                            }
-                            else
-                            {
-                                if (avalable_father_folder[parentID] == 1)
-                                {
-                                    Directory* d = root_Drives[ith_drive]->NTFS_Find_Parent_Directory(parentID);
-                                    if (d != NULL)
-                                    {
-                                        d->addNewFile_Directory(f);
-                                    }
-                                    else
-                                    {
-                                        delete f;
-                                        delete[] attr;
-                                        break;
-                                    }
-                                }
-                            }
+                            root_Drives[ith_drive]->addNewFile_Directory(f);
 
                         }
+                        else
+                        {
+                            if (avalable_father_folder[parentID] == 1)
+                            {
+                                Directory* d = root_Drives[ith_drive]->NTFS_Find_Parent_Directory(parentID);
+                                if (d != NULL)
+                                {
+                                    d->addNewFile_Directory(f);
+                                }
+                                else
+                                {
+                                    delete f;
+                                    delete[] attr;
+                                    break;
+                                }
+                            }
+                        }
+
                     }
-                    else if (h.type_id == 128)
+                    else if (h.type_id == 128 && cnt_data_attribute == 0)
                     {
+                        cnt_data_attribute++;
                         if (h.flag_non_resident == 0)
                         {
                             f->setTotalSize(h.attribute_data_size);
@@ -182,7 +200,6 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
             else if (flag_file_directory_used == 0x03)
             {
                 Directory* f = new Directory;
-                f->setAttributes("Folder");
                 Header_MFT_Entry mft_header;
                 mft_header.started_attribute_offset = mft[0x14] | mft[0x15] << 8;
                 mft_header.flag = mft[0x16] | mft[0x17] << 8;
@@ -208,12 +225,6 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                     std::copy(mft + started_byte, mft + started_byte + size, attr);
                     Header_Attribute h;
                     h.type_id = (long long)attr[0x00] | (attr[0x01] << 8) | (attr[0x02] << 16) | (attr[0x03] << 24);
-                    if (h.type_id != 16 && h.type_id != 48 && h.type_id != 128 && h.type_id != 176)
-                    {
-                        started_byte += size;
-                        delete[] attr;
-                        break;
-                    }
                     h.size_of_attribute = attr[0x04] | (attr[0x05] << 8) | (attr[0x06] << 16) | (attr[0x07] << 24);
                     h.flag_non_resident = attr[0x08];
                     h.length_name_attribute = attr[9];
@@ -235,43 +246,59 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath) {
                     {
                         int x = h.attribute_data_offset;
                         int flag = attr[x + 56] | (attr[x + 57] << 8) | (attr[x + 58] << 16) | (attr[x + 59] << 24);
-                        int mask = 2;
-                        bool is_Hiden = (flag & mask) == 2;
-                        if (((is_Hiden) || h.attribute_data_size == 0) && cnt != 0)
+                        int flag_attribute = flag & 0xF;
+                        std::string str_attribute;
+                        switch (flag_attribute)
                         {
-                            delete[] attr;
-                            delete f;
+                        case 1:
+                            str_attribute = "ReadOnly";
+                            break;
+                        case 2:
+                            str_attribute = "Hiden";
+                            break;
+                        case 3:
+                            str_attribute = "ReadOnly, Hiden";
+                            break;
+                        case 4:
+                            str_attribute = "System";
+                            break;
+                        case 5:
+                            str_attribute = "System, ReadOnly";
+                            break;
+                        case 6:
+                            str_attribute = "System, Hiden";
+                            break;
+                        case 7:
+                            str_attribute = "System, ReadOnly, Hiden";
                             break;
                         }
-                        if (cnt != 0)
+                        f->setAttributes(str_attribute);
+                        f->setName(NTFS_Create_Name(attr, h));
+                        int parentID = attr[x] | (attr[x + 1] << 8) | (attr[x + 2] << 16) | (attr[x + 3] << 24) | (attr[x + 4] << 32) | (attr[x + 5] << 40);
+                        if (parentID == drive_id)
                         {
-                            f->setName(NTFS_Create_Name(attr, h));
-                            int parentID = attr[x] | (attr[x + 1] << 8) | (attr[x + 2] << 16) | (attr[x + 3] << 24) | (attr[x + 4] << 32) | (attr[x + 5] << 40);
-                            if (parentID == drive_id)
+                            root_Drives[ith_drive]->addNewFile_Directory(f);
+                            avalable_father_folder[f->NTFS_Get_ID()] = 1;
+                        }
+                        else
+                        {
+                            if (avalable_father_folder[parentID] == 1)
                             {
-                                root_Drives[ith_drive]->addNewFile_Directory(f);
-                                avalable_father_folder[f->NTFS_Get_ID()] = 1;
+                                Directory* d = root_Drives[ith_drive]->NTFS_Find_Parent_Directory(parentID);
+                                if (d != NULL)
+                                {
+                                    d->addNewFile_Directory(f);
+                                    avalable_father_folder[f->NTFS_Get_ID()] = 1;
+                                }
                             }
                             else
                             {
-                                if (avalable_father_folder[parentID] == 1)
-                                {
-                                    Directory* d = root_Drives[ith_drive]->NTFS_Find_Parent_Directory(parentID);
-                                    if (d != NULL)
-                                    {
-                                        d->addNewFile_Directory(f);
-                                        avalable_father_folder[f->NTFS_Get_ID()] = 1;
-                                    }
-                                }
-                                else
-                                {
-                                    delete f;
-                                    delete[] attr;
-                                    break;
-                                }
+                                delete f;
+                                delete[] attr;
+                                break;
                             }
-
                         }
+
                     }
                     else if (h.type_id == 176 && cnt == 0)
                     {
@@ -381,7 +408,6 @@ void NTFS_Create_Date_Time(BYTE* attr, Header_Attribute h, Date& d, Time& t)
     t.minute = timeinfo.tm_min;
     t.second = timeinfo.tm_sec;
     delete[] data_attr;
-
 }
 
 std::string NTFS_Create_Name(BYTE* attr, Header_Attribute h)

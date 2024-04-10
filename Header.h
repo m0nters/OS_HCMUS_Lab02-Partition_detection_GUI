@@ -90,7 +90,7 @@ protected:
 	std::string attributes;
 	Date date_created;
 	Time time_created;
-	std::vector <int> cluster_pos;
+	std::vector <long long> cluster_pos;
 	long long total_size = 0; // in byte
 	std::vector <std::vector<BYTE>>data;
 
@@ -131,8 +131,8 @@ public:
 		return text;
 	}
 
-	void add_cluster_pos(int pos) { cluster_pos.push_back(pos); }
-	int get_pos_cluster(int index) { return cluster_pos[index]; }
+	void add_cluster_pos(long long pos) { cluster_pos.push_back(pos); }
+	long long get_pos_cluster(int index) { return cluster_pos[index]; }
 
 	std::string getTotalSize_str() {
 		// round 2 decimal numbers
@@ -273,7 +273,8 @@ public:
 					QString::fromStdString(dir_entity->getName()),
 					QString::fromStdString(dir_entity->getDate_str()),
 					QString::fromStdString(dir_entity->getTime_str()),
-					QString::fromStdString(dir_entity->getTotalSize_str())
+					QString::fromStdString(dir_entity->getTotalSize_str()),
+					QString::fromStdString(dir_entity->getAttributes())
 				); // folder ko co size
 				folder->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
@@ -294,7 +295,8 @@ public:
 						QString::fromStdString(file_entity->getName()),
 						QString::fromStdString(file_entity->getDate_str()),
 						QString::fromStdString(file_entity->getTime_str()),
-						QString::fromStdString(file_entity->getTotalSize_str())
+						QString::fromStdString(file_entity->getTotalSize_str()),
+						QString::fromStdString(file_entity->getAttributes())
 					);
 					folder->addChild(file_item);
 					if (file_entity->get_txt_content() != "")
@@ -497,9 +499,12 @@ public:
 					QString::fromStdString(dir_entity->getName()),
 					QString::fromStdString(dir_entity->getDate_str()),
 					QString::fromStdString(dir_entity->getTime_str()),
-					QString::fromStdString(dir_entity->getTotalSize_str())
-				);  // folder ko co size
-				Drive->addChild(dir_item);
+					QString::fromStdString(dir_entity->getTotalSize_str()),
+					QString::fromStdString(dir_entity->getAttributes())
+				);
+				if (dir_entity->getName() != "." && dir_entity->getName() != "System Volume Information" &&
+					dir_entity->getName() != "$Extend")
+					Drive->addChild(dir_item);
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
 				// ========================================================================================
 				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_dirve)); // save ith_drive where the folder belongs to
@@ -518,9 +523,19 @@ public:
 						QString::fromStdString(file_entity->getName()),
 						QString::fromStdString(file_entity->getDate_str()),
 						QString::fromStdString(file_entity->getTime_str()),
-						QString::fromStdString(file_entity->getTotalSize_str())
+						QString::fromStdString(file_entity->getTotalSize_str()),
+						QString::fromStdString(file_entity->getAttributes())
 					);
-					Drive->addChild(file_item);
+					if (file_entity->getName() != "$MFT" &&
+						file_entity->getName() != "$MFTMirr" &&
+						file_entity->getName() != "$LogFile" &&
+						file_entity->getName() != "$Volume" &&
+						file_entity->getName() != "$AttrDef" &&
+						file_entity->getName() != "$Bitmap" &&
+						file_entity->getName() != "$Boot" &&
+						file_entity->getName() != "$BadClus" &&
+						file_entity->getName() != "$UpCase")
+						Drive->addChild(file_item);
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
 					// ========================================================================================
@@ -707,7 +722,8 @@ public:
 				QString::fromStdString(root_Drives[i]->getName()),
 				"",
 				"",
-				QString::fromStdString(root_Drives[i]->getTotalSize_str())
+				QString::fromStdString(root_Drives[i]->getTotalSize_str()),
+				""
 			);
 			w.get_current_treeWidget()->addTopLevelItem(drive_item);
 			drive_item->setIcon(0, QIcon(".\\drive_icon.png"));

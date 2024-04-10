@@ -21,7 +21,7 @@ public:
 		return ui.treeWidget;
 	}
 	
-	void QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size);
+	void QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size, QString attributes);
 
 	// STORED POINTERS FOR DELETE AND RECOVER IN THE CURRENT SESSION
 	QTreeWidgetItem* selectedItem = nullptr; // for delete
@@ -37,6 +37,7 @@ public slots:
 
 protected:
 	void keyPressEvent(QKeyEvent* event) override; // Override keyPressEvent method
+	void mousePressEvent(QMouseEvent* event) override;
 
 private:
 	Ui::Qt_GUIClass ui;

@@ -2,6 +2,7 @@
 #include <QDesktopServices>
 #include <regex>
 #include <qmessagebox.h>
+#include <qcheckbox.h>
 
 std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // mimic the current Computer instance in main() to alter the GUI
 
@@ -11,7 +12,7 @@ Qt_GUI::Qt_GUI(QWidget* parent)
 	clone_pc->detectFormat();
 	clone_pc->readDrives();
 	ui.setupUi(this);
-	ui.treeWidget->setHeaderLabels({ "Name", "Date created\n(dd/mm/yyyy)", "Time created\n(hh:mm:ss:ms)", "Total Size" });
+	ui.treeWidget->setHeaderLabels({ "Name", "Date created\n(dd/mm/yyyy)", "Time created\n(hh:mm:ss:ms)", "Total Size",  "Other attributes" });
 	ui.splitter->setSizes({ 300,25 });
 
 	// left click to .txt file to show its content
@@ -30,19 +31,23 @@ Qt_GUI::~Qt_GUI()
 {
 }
 
-void Qt_GUI::QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size) {
+void Qt_GUI::QTreeWidgetItem_populate_info(QTreeWidgetItem*& node, QString name, QString date_created, QString time_created, QString total_size, QString other_attributes) {
 	node->setText(0, name);
 	node->setText(1, date_created);
 	node->setText(2, time_created);
 	node->setText(3, total_size);
+	node->setText(4, other_attributes);
 }
 
 void Qt_GUI::onTreeItemClicked(QTreeWidgetItem* item, int column) {
 	selectedItem = item; // Store the selected item
+	ui.delete_button->setEnabled(selectedItem);
 	QVariant raw_data = item->data(0, Qt::UserRole);
 	QString data = raw_data.toString();
-	if (!data.isEmpty())
+	if (!data.isEmpty()) {
+		// add "please wait" in the file_content_box and during waiting if user press esc then stop the process, if stop the process, add "can't load the content" and never load the code below
 		ui.file_content_box->setPlainText(data);
+	}
 	else
 		ui.file_content_box->setPlainText("");
 }
@@ -94,6 +99,7 @@ void Qt_GUI::on_delete_button_clicked() {
 		int childIndex = parent_selectedItem->indexOfChild(selectedItem);
 		parent_selectedItem->takeChild(childIndex);
 	}
+	ui.file_content_box->clear();
 }
 
 bool is_nonneg_num(const std::string& s) {
@@ -146,4 +152,14 @@ void Qt_GUI::onDriveOrFileNameChanged()
 		ui.restore_button->setEnabled(true);
 	else
 		ui.restore_button->setEnabled(false);
+}
+
+void Qt_GUI::mousePressEvent(QMouseEvent* event) {
+	// Check if the mouse press event occurs outside the tree widget
+	if (!ui.treeWidget->geometry().contains(event->pos())) {
+		selectedItem = nullptr;
+		ui.delete_button->setEnabled(false);
+		ui.treeWidget->clearSelection();
+		ui.file_content_box->clear();
+	}
 }

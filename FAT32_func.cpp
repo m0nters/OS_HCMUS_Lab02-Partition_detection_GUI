@@ -149,16 +149,46 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
                 std::copy(&rdet[start_byte], &rdet[start_byte + 32], back_inserter(temp_vec)); // Doc 32 byte vao entry phu
                 extra_entry.push_back(temp_vec);
             }
-            else if ((attribute == 0x10 || attribute == 0x20) && rdet[start_byte] != 0xE5)
+            else if ((attribute >= 0x10) && rdet[start_byte] != 0xE5)
             {
                 copy(&rdet[start_byte], &rdet[start_byte + 32], back_inserter(main_entry)); // Doc 32 byte vao entry chinh
                 std::string name = FAT32_Create_Name(extra_entry, main_entry);
                 name.erase(std::remove(name.begin(), name.end(), 0x00), name.end());
+
                 Date d = FAT32_Create_Date(main_entry);
                 Time t = FAT32_Create_Time(main_entry);
-                int started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
+                long long low_started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
+                long long high_started_cluster = main_entry[0x14] | (main_entry[0x15] << 8);
+                long long started_cluster = (high_started_cluster << 16) | low_started_cluster;
                 long long total_size = main_entry[0x1C] | (main_entry[0x1C + 1] << 8) | (main_entry[0x1C + 2] << 16) | (main_entry[0x1C + 3] << 24);
-                if (attribute == 0x20)
+
+                int flag_attribute = attribute & 0xF;
+                std::string str_attribute;
+                switch (flag_attribute)
+                {
+                case 1:
+                    str_attribute = "ReadOnly";
+                    break;
+                case 2:
+                    str_attribute = "Hiden";
+                    break;
+                case 3:
+                    str_attribute = "ReadOnly, Hiden";
+                    break;
+                case 4:
+                    str_attribute = "System";
+                    break;
+                case 5:
+                    str_attribute = "System, ReadOnly";
+                    break;
+                case 6:
+                    str_attribute = "System, Hiden";
+                    break;
+                case 7:
+                    str_attribute = "System, ReadOnly, Hiden";
+                    break;
+                }
+                if (attribute >= 0x20)
                 {
                     File* newFile = new File;
                     newFile->setName(name);
@@ -166,8 +196,8 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
                     newFile->setTime(t);
                     newFile->add_cluster_pos(started_cluster);
                     newFile->setTotalSize(total_size);
-                    newFile->FAT32_Read_Next_Sector(root_Drives[ith_drive], drivePath);
-                    newFile->setAttributes("File");
+                    newFile->FAT32_Read_Next_Cluster(root_Drives[ith_drive], drivePath);
+                    newFile->setAttributes(str_attribute);
                     root_Drives[ith_drive]->addNewFile_Directory(newFile);
                 }
                 else
@@ -177,8 +207,8 @@ void Computer::FAT32_Read_RDET(int ith_drive, std::wstring drivePath)
                     newDirectory->setDate(d);
                     newDirectory->setTime(t);
                     newDirectory->add_cluster_pos(started_cluster);
-                    newDirectory->FAT32_Read_Next_Sector(root_Drives[ith_drive], drivePath);
-                    newDirectory->setAttributes("Folder");
+                    newDirectory->FAT32_Read_Next_Cluster(root_Drives[ith_drive], drivePath);
+                    newDirectory->setAttributes(str_attribute);
                     root_Drives[ith_drive]->addNewFile_Directory(newDirectory);
                 }
                 extra_entry.clear();
@@ -211,7 +241,7 @@ void FileSystemEntity::FAT32_Read_Next_Cluster(Drive* dr, std::wstring drivePath
     }
     DWORD bytesRead;
     int bytesread = 0;
-    int cluster_pos = get_pos_cluster(0) * 4; // 1 cluster doc 4 byte trong FAT1
+    long long cluster_pos = get_pos_cluster(0) * 4; // 1 cluster doc 4 byte trong FAT1
     BYTE* fat1 = new BYTE[bs.byte_per_sector * bs.sector_per_FAT];
     SetFilePointer(hDrive, bs.byte_per_sector * bs.sector_before_FAT_table, NULL, FILE_BEGIN);
 
@@ -235,7 +265,7 @@ void FileSystemEntity::FAT32_Read_Next_Cluster(Drive* dr, std::wstring drivePath
                 return;
             }
             bytesread += bs.byte_per_sector * bs.sector_per_FAT;
-            cluster_pos -= bs.byte_per_sector * bs.sector_per_FAT;
+            cluster_pos -= (long long)bs.byte_per_sector * bs.sector_per_FAT;
             if (cluster_pos >= bytesread)
                 continue;
         }
@@ -337,8 +367,36 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                 name.erase(std::remove(name.begin(), name.end(), 0x00), name.end());
                 Date d = FAT32_Create_Date(main_entry);
                 Time t = FAT32_Create_Time(main_entry);
-                int started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
+                long long low_started_cluster = main_entry[0x1A] | (main_entry[0x1A + 1] << 8);
+                long long high_started_cluster = main_entry[0x14] | (main_entry[0x15] << 8);
+                long long started_cluster = (high_started_cluster << 16) | low_started_cluster;
                 long long total_size = main_entry[0x1C] | (main_entry[0x1C + 1] << 8) | (main_entry[0x1C + 2] << 16) | (main_entry[0x1C + 3] << 24);
+                int flag_attribute = attribute & 0xF;
+                std::string str_attribute;
+                switch (flag_attribute)
+                {
+                case 1:
+                    str_attribute = "ReadOnly";
+                    break;
+                case 2:
+                    str_attribute = "Hiden";
+                    break;
+                case 3:
+                    str_attribute = "ReadOnly, Hiden";
+                    break;
+                case 4:
+                    str_attribute = "System";
+                    break;
+                case 5:
+                    str_attribute = "System, ReadOnly";
+                    break;
+                case 6:
+                    str_attribute = "System, Hiden";
+                    break;
+                case 7:
+                    str_attribute = "System, ReadOnly, Hiden";
+                    break;
+                }
                 if (attribute == 0x20 || attribute == 0x00)
                 {
                     File* newFile = new File;
@@ -347,8 +405,8 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                     newFile->setTime(t);
                     newFile->add_cluster_pos(started_cluster);
                     newFile->setTotalSize(total_size);
-                    newFile->FAT32_Read_Next_Sector(dr, drivePath);
-                    newFile->setAttributes("File");
+                    newFile->FAT32_Read_Next_Cluster(dr, drivePath);
+                    newFile->setAttributes(str_attribute);
                     this->addNewFile_Directory(newFile);
                 }
                 else
@@ -358,8 +416,8 @@ void Directory::FAT32_ReadDirectoryData(Drive* dr, std::wstring drivePath)
                     newDirectory->setDate(d);
                     newDirectory->setTime(t);
                     newDirectory->add_cluster_pos(started_cluster);
-                    newDirectory->FAT32_Read_Next_Sector(dr, drivePath);
-                    newDirectory->setAttributes("Folder");
+                    newDirectory->FAT32_Read_Next_Cluster(dr, drivePath);
+                    newDirectory->setAttributes(str_attribute);
                     this->addNewFile_Directory(newDirectory);
                 }
                 extra_entry = std::vector <std::vector <BYTE>>{};
@@ -494,3 +552,4 @@ bool Directory::FAT32_Remove_File(std::wstring drivePath, std::string name_file,
     }
     return false;
 }
+
