@@ -5,7 +5,7 @@ int main(int argc, char* argv[])
     QApplication a(argc, argv);
     Qt_GUI main_screen(NULL);
 
-    std::unique_ptr<Computer> MyPC = std::make_unique<Computer>();
+    std::shared_ptr<Computer> MyPC = std::make_shared<Computer>();
     MyPC->detectFormat();
     MyPC->readDrives();
     MyPC->make_GUI(main_screen);

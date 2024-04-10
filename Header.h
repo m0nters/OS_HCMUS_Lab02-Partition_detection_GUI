@@ -502,9 +502,8 @@ public:
 					QString::fromStdString(dir_entity->getTotalSize_str()),
 					QString::fromStdString(dir_entity->getAttributes())
 				);
-				if (dir_entity->getName() != "." && dir_entity->getName() != "System Volume Information" &&
-					dir_entity->getName() != "$Extend")
-					Drive->addChild(dir_item);
+				Drive->addChild(dir_item);
+
 				dir_item->setIcon(0, QIcon(".\\folder_icon.png"));
 				// ========================================================================================
 				dir_item->setData(0, Qt::UserRole + 1, QVariant(ith_dirve)); // save ith_drive where the folder belongs to
@@ -526,16 +525,8 @@ public:
 						QString::fromStdString(file_entity->getTotalSize_str()),
 						QString::fromStdString(file_entity->getAttributes())
 					);
-					if (file_entity->getName() != "$MFT" &&
-						file_entity->getName() != "$MFTMirr" &&
-						file_entity->getName() != "$LogFile" &&
-						file_entity->getName() != "$Volume" &&
-						file_entity->getName() != "$AttrDef" &&
-						file_entity->getName() != "$Bitmap" &&
-						file_entity->getName() != "$Boot" &&
-						file_entity->getName() != "$BadClus" &&
-						file_entity->getName() != "$UpCase")
-						Drive->addChild(file_item);
+					Drive->addChild(file_item);
+
 					if (file_entity->get_txt_content() != "")
 						file_item->setData(0, Qt::UserRole, QVariant(QString::fromStdString(file_entity->get_txt_content())));
 					// ========================================================================================
@@ -642,6 +633,9 @@ private:
 	std::vector<Drive*> root_Drives;
 	std::map<std::string, int> drive_to_order_map;
 public:
+	std::vector<Drive*>& get_Drives() {
+		return root_Drives;
+	}
 	std::string capitalizeString(const std::string& str) {
 		std::string result = str;
 		for (char& c : result) {
@@ -723,7 +717,7 @@ public:
 				"",
 				"",
 				QString::fromStdString(root_Drives[i]->getTotalSize_str()),
-				""
+				"System"
 			);
 			w.get_current_treeWidget()->addTopLevelItem(drive_item);
 			drive_item->setIcon(0, QIcon(".\\drive_icon.png"));

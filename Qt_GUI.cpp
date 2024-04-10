@@ -2,18 +2,36 @@
 #include <QDesktopServices>
 #include <regex>
 #include <qmessagebox.h>
+#include <unordered_set>
 #include <qcheckbox.h>
 
-std::unique_ptr<Computer> clone_pc = std::make_unique<Computer>(); // mimic the current Computer instance in main() to alter the GUI
+std::shared_ptr<Computer> clone_pc = std::make_shared<Computer>(); // mimic the backend data of current Computer instance in main() to alter the GUI
+
+const std::unordered_set<std::string> system_files_names = {
+		"System Volume Information",
+		"$MFT",
+		"$MFTMirr",
+		"$LogFile",
+		"$Volume",
+		"$AttrDef",
+		".",
+		"$Bitmap",
+		"$Boot",
+		"$BadClus",
+		"$UpCase",
+		"$Extend",
+		"$Volume"
+};
 
 Qt_GUI::Qt_GUI(QWidget* parent)
 	: QMainWindow(parent)
 {
-	clone_pc->detectFormat();
-	clone_pc->readDrives();
 	ui.setupUi(this);
 	ui.treeWidget->setHeaderLabels({ "Name", "Date created\n(dd/mm/yyyy)", "Time created\n(hh:mm:ss:ms)", "Total Size",  "Other attributes" });
 	ui.splitter->setSizes({ 300,25 });
+
+	clone_pc->detectFormat();
+	clone_pc->readDrives();
 
 	// left click to .txt file to show its content
 	connect(ui.treeWidget, &QTreeWidget::itemClicked, this, &Qt_GUI::onTreeItemClicked);
@@ -25,6 +43,9 @@ Qt_GUI::Qt_GUI(QWidget* parent)
 	// Connect textChanged signals of drive_input and name_input to onDriveOrFileNameChanged slot
 	connect(ui.drive_input, &QLineEdit::textChanged, this, &Qt_GUI::onDriveOrFileNameChanged);
 	connect(ui.name_input, &QLineEdit::textChanged, this, &Qt_GUI::onDriveOrFileNameChanged);
+
+	// for event show system files checkbox tick/untick
+	connect(ui.allow_system_files_checkbox, &QCheckBox::stateChanged, this, &Qt_GUI::onShowSystemFilesStateChanged);
 }
 
 Qt_GUI::~Qt_GUI()
@@ -161,5 +182,36 @@ void Qt_GUI::mousePressEvent(QMouseEvent* event) {
 		ui.delete_button->setEnabled(false);
 		ui.treeWidget->clearSelection();
 		ui.file_content_box->clear();
+	}
+}
+
+void Qt_GUI::onShowSystemFilesStateChanged(int state) {
+	static int run_time = 0;
+	if (!run_time++) // because we can't put this code into constructor, fill the system_files vector for only 1 time to save resource
+		for (int drive_idx = 0; drive_idx < ui.treeWidget->topLevelItemCount(); ++drive_idx) {
+			system_files.push_back(std::vector<std::pair<QTreeWidgetItem*, QTreeWidgetItem*>>());
+			QTreeWidgetItem* drive_node = ui.treeWidget->topLevelItem(drive_idx); // for each drive
+			for (int item_idx = 0; item_idx < drive_node->childCount(); ++item_idx) { // take out each of its items (child)
+				QTreeWidgetItem* item = drive_node->child(item_idx);
+				if (system_files_names.find(item->text(0).toStdString()) != system_files_names.end()) { // if the item is a system file (match one of system files names)
+					system_files[drive_idx].push_back({ item, drive_node });
+				}
+			}
+		}
+
+	if (state == Qt::Checked) {
+		for (int drive_idx = 0; drive_idx < system_files.size(); ++drive_idx) {
+			for (int pair_idx = 0; pair_idx < system_files[drive_idx].size(); ++pair_idx) {
+				system_files[drive_idx][pair_idx].second->addChild(system_files[drive_idx][pair_idx].first);
+			}
+		}
+	}
+	else {
+		for (int drive_idx = 0; drive_idx < system_files.size(); ++drive_idx) {
+			for (int pair_idx = 0; pair_idx < system_files[drive_idx].size(); ++pair_idx) {
+				int childIndex = system_files[drive_idx][pair_idx].second->indexOfChild(system_files[drive_idx][pair_idx].first);
+				system_files[drive_idx][pair_idx].second->takeChild(childIndex);
+			}
+		}
 	}
 }

@@ -41,6 +41,19 @@
           </column>
          </widget>
         </item>
+        <item>
+         <widget class="QCheckBox" name="allow_system_files_checkbox">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="text">
+           <string>Hiển thị file hệ thống</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QSplitter" name="right_layout">

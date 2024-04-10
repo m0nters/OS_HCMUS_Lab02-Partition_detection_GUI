@@ -120,25 +120,25 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath)
                         switch (flag_attribute)
                         {
                         case 1:
-                            str_attribute = "ReadOnly";
+                            str_attribute = "Read-only";
                             break;
                         case 2:
-                            str_attribute = "Hiden";
+                            str_attribute = "Hidden";
                             break;
                         case 3:
-                            str_attribute = "ReadOnly, Hiden";
+                            str_attribute = "Read-only, Hidden";
                             break;
                         case 4:
                             str_attribute = "System";
                             break;
                         case 5:
-                            str_attribute = "System, ReadOnly";
+                            str_attribute = "System, Read-only";
                             break;
                         case 6:
-                            str_attribute = "System, Hiden";
+                            str_attribute = "System, Hidden";
                             break;
                         case 7:
-                            str_attribute = "System, ReadOnly, Hiden";
+                            str_attribute = "System, Read-only, Hidden";
                             break;
                         }
                         f->setAttributes(str_attribute);
@@ -251,25 +251,25 @@ void Computer::NTFS_Read_MFT(int ith_drive, std::wstring drivePath)
                         switch (flag_attribute)
                         {
                         case 1:
-                            str_attribute = "ReadOnly";
+                            str_attribute = "Read-only";
                             break;
                         case 2:
-                            str_attribute = "Hiden";
+                            str_attribute = "Hidden";
                             break;
                         case 3:
-                            str_attribute = "ReadOnly, Hiden";
+                            str_attribute = "Read-only, Hidden";
                             break;
                         case 4:
                             str_attribute = "System";
                             break;
                         case 5:
-                            str_attribute = "System, ReadOnly";
+                            str_attribute = "System, Read-only";
                             break;
                         case 6:
-                            str_attribute = "System, Hiden";
+                            str_attribute = "System, Hidden";
                             break;
                         case 7:
-                            str_attribute = "System, ReadOnly, Hiden";
+                            str_attribute = "System, Read-only, Hidden";
                             break;
                         }
                         f->setAttributes(str_attribute);
