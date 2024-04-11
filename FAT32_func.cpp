@@ -16,13 +16,13 @@ void Computer::FAT32_Read_BootSector(int ith_drive, std::wstring drivePath)
         CloseHandle(hDrive);
         return;
     }
-    int byte_per_sector = bootsector[11] | (bootsector[12] << 8);
-    int sector_per_cluster = bootsector[13];
-    int sector_before_FAT_table = bootsector[14] | (bootsector[15] << 8);
-    int num_of_FAT_tables = bootsector[16];
-    int Volume_size = bootsector[32] | (bootsector[33] << 8) | (bootsector[34] << 16) | (bootsector[35] << 24);
-    int sector_per_FAT = bootsector[36] | (bootsector[37] << 8) | (bootsector[38] << 16) | (bootsector[39] << 24);
-    int first_cluster_of_RDET = bootsector[44] | (bootsector[45] << 8) | (bootsector[46] << 16) | (bootsector[47] << 24);
+    int byte_per_sector = bootsector[0x0B] | (bootsector[0x0C] << 8);
+    int sector_per_cluster = bootsector[0x0D];
+    int sector_before_FAT_table = bootsector[0x0E] | (bootsector[0x0F] << 8);
+    int num_of_FAT_tables = bootsector[0x10];
+    int Volume_size = bootsector[0x20] | (bootsector[0x21] << 8) | (bootsector[0x22] << 16) | (bootsector[0x23] << 24);
+    int sector_per_FAT = bootsector[0x24] | (bootsector[0x25] << 8) | (bootsector[0x26] << 16) | (bootsector[0x27] << 24);
+    int first_cluster_of_RDET = bootsector[0x2C] | (bootsector[0x2D] << 8) | (bootsector[0x2E] << 16) | (bootsector[0x2F] << 24);
     root_Drives[ith_drive]->set_fat32_bootsector(byte_per_sector, sector_per_cluster, sector_before_FAT_table, num_of_FAT_tables, Volume_size, sector_per_FAT, first_cluster_of_RDET);
     std::cout << "Byte per sector: " << byte_per_sector << std::endl;
     std::cout << "Sector per cluster: " << sector_per_cluster << std::endl;

@@ -189,29 +189,26 @@ void Qt_GUI::onShowSystemFilesStateChanged(int state) {
 	static int run_time = 0;
 	if (!run_time++) // because we can't put this code into constructor, fill the system_files vector for only 1 time to save resource
 		for (int drive_idx = 0; drive_idx < ui.treeWidget->topLevelItemCount(); ++drive_idx) {
-			system_files.push_back(std::vector<std::pair<QTreeWidgetItem*, QTreeWidgetItem*>>());
 			QTreeWidgetItem* drive_node = ui.treeWidget->topLevelItem(drive_idx); // for each drive
 			for (int item_idx = 0; item_idx < drive_node->childCount(); ++item_idx) { // take out each of its items (child)
 				QTreeWidgetItem* item = drive_node->child(item_idx);
 				if (system_files_names.find(item->text(0).toStdString()) != system_files_names.end()) { // if the item is a system file (match one of system files names)
-					system_files[drive_idx].push_back({ item, drive_node });
+					system_files.push_back({ item, drive_node }); // save it and its parent 
 				}
 			}
 		}
 
 	if (state == Qt::Checked) {
-		for (int drive_idx = 0; drive_idx < system_files.size(); ++drive_idx) {
-			for (int pair_idx = 0; pair_idx < system_files[drive_idx].size(); ++pair_idx) {
-				system_files[drive_idx][pair_idx].second->addChild(system_files[drive_idx][pair_idx].first);
+			for (int pair_idx = 0; pair_idx < system_files.size(); ++pair_idx) {
+				system_files[pair_idx].second->addChild(system_files[pair_idx].first);
 			}
-		}
 	}
 	else {
-		for (int drive_idx = 0; drive_idx < system_files.size(); ++drive_idx) {
-			for (int pair_idx = 0; pair_idx < system_files[drive_idx].size(); ++pair_idx) {
-				int childIndex = system_files[drive_idx][pair_idx].second->indexOfChild(system_files[drive_idx][pair_idx].first);
-				system_files[drive_idx][pair_idx].second->takeChild(childIndex);
-			}
+		for (int pair_idx = 0; pair_idx < system_files.size(); ++pair_idx) {
+			int childIndex = system_files[pair_idx].second->indexOfChild(system_files[pair_idx].first);
+			system_files[pair_idx].second->takeChild(childIndex);
 		}
+		ui.treeWidget->clearSelection();
+		ui.file_content_box->clear();
 	}
 }

@@ -40,7 +40,7 @@ void Computer::detectFormat()
         return;
     }
     int drive_order = 0;
-    for (int i = 0x01BE + 4; i < sizeof(mbr); i += 16) {// offset 0x04 bat dau tu 0x01BE, Bang mo ta 1 partition cua MBR = 16 bytes 
+    for (int i = 0x01BE + 4; i < sizeof(mbr) - 2; i += 16) {// offset 0x04 bat dau tu 0x01BE, Bang mo ta 1 partition cua MBR = 16 bytes 
         if (mbr[i] == 0x07) {
             root_Drives[drive_order]->setType("NTFS");
         }
