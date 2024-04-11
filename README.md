@@ -6,7 +6,7 @@ It was assigned as Lab02 project in my Operating System class.
 ## Table of Contents
 - [Project Description](#project-description)
 - [Programming langauge and GUI platform we use](#programming-langauge-and-GUI-platform-we-use)
-- [Existing error](#error)
+- [Existing error](#Existing-error)
 - [Installation](#installation)
 - [Usage](#usage)
 - [License](#license)
@@ -72,4 +72,4 @@ We have compiled the source code into an executable portable application. You ca
 Plug in your USB, make sure you have divided it into several partitions before (we only support 2 types: NTFS, FAT32), then run the program.
 
 ## License
-That's bullshit, we don't care, take it if you want. (the whole program is already a mess)
+That's bullshit, we don't care, take it if you want. (the whole program is already a mess btw, hope you can understand the source code)
