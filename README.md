@@ -6,7 +6,7 @@ It was assigned as Lab02 project in my Operating System class.
 ## Table of Contents
 - [Project Description](#project-description)
 - [Programming langauge and GUI platform we use](#programming-langauge-and-GUI-platform-we-use)
-- [Existing error](#existing-error)
+- [Existing errors](#existing-errors)
 - [Installation](#installation)
 - [Usage](#usage)
 - [License](#license)
